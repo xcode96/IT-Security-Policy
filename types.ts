@@ -35,8 +35,17 @@ export interface TrainingReport {
     submissionDate: string;
 }
 
+export interface User {
+  fullName: string;
+  username: string;
+  password?: string;
+}
+
 export interface AdminPanelProps {
     quizzes: Quiz[];
+    users: User[];
+    onAddUser: (user: User) => void;
+    onDeleteUser: (username: string) => void;
     onAddQuestion: (quizId: string, question: Omit<Question, 'id'>) => void;
     onImportQuizzes: (quizzes: Quiz[]) => void;
 }

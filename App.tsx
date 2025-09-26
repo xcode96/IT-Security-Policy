@@ -1,23 +1,36 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { QUIZZES as INITIAL_QUIZZES } from './constants';
-import { Question, QuizProgress, TrainingReport, Quiz } from './types';
+import { Question, QuizProgress, TrainingReport, Quiz, User } from './types';
 import QuestionCard from './components/QuestionCard';
 import ResultsCard from './components/ResultsCard';
 import ProgressBar from './components/ProgressBar';
 import QuizHub from './components/QuizHub';
-import UserInfo from './components/UserInfo';
+import UserLogin from './components/UserInfo'; // Renamed conceptually to UserLogin
 import ReportCard from './components/ReportCard';
 import AdminLogin from './components/AdminLogin';
 import AdminPanel from './components/AdminPanel';
 
-type View = 'user_info' | 'quiz_hub' | 'quiz_running' | 'quiz_finished' | 'report';
+type View = 'user_login' | 'quiz_hub' | 'quiz_running' | 'quiz_finished' | 'report';
 
 const App: React.FC = () => {
-  const [view, setView] = useState<View>('user_info');
+  const [view, setView] = useState<View>('user_login');
   const [user, setUser] = useState<{ fullName: string, username: string } | null>(null);
   const [quizzes, setQuizzes] = useState<Quiz[]>(INITIAL_QUIZZES);
+  const [users, setUsers] = useState<User[]>([]);
 
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const savedUsersRaw = localStorage.getItem('app_users');
+    let savedUsers: User[] = savedUsersRaw ? JSON.parse(savedUsersRaw) : [];
+
+    const defaultUserExists = savedUsers.some(u => u.username === 'main');
+    if (!defaultUserExists) {
+        savedUsers.push({ fullName: 'Main User', username: 'main', password: 'Cat' });
+        localStorage.setItem('app_users', JSON.stringify(savedUsers));
+    }
+    setUsers(savedUsers);
+  }, []);
 
   const initialProgress = useMemo(() => {
     const progress: QuizProgress = {};
@@ -40,11 +53,16 @@ const App: React.FC = () => {
     }
     return false;
   };
-
-  const handleUserSubmit = useCallback((fullName: string, username: string) => {
-    setUser({ fullName, username });
-    setView('quiz_hub');
-  }, []);
+  
+  const handleUserLogin = useCallback((username: string, password: string): boolean => {
+    const userFound = users.find(u => u.username === username && u.password === password);
+    if (userFound) {
+        setUser({ fullName: userFound.fullName, username: userFound.username });
+        setView('quiz_hub');
+        return true;
+    }
+    return false;
+  }, [users]);
 
   const handleStartQuiz = useCallback((quizId: string) => {
     setQuizProgress(prev => ({
@@ -137,7 +155,7 @@ const App: React.FC = () => {
     setUser(null);
     setActiveQuizId(null);
     setCurrentQuestionIndex(0);
-    setView('user_info');
+    setView('user_login');
   }, [initialProgress]);
 
   const handleAddQuestion = (quizId: string, question: Omit<Question, 'id'>) => {
@@ -153,6 +171,30 @@ const App: React.FC = () => {
             return quiz;
         });
     });
+  };
+  
+  const handleAddUser = (newUser: User) => {
+    if (users.some(u => u.username === newUser.username)) {
+        alert('Username already exists.');
+        return;
+    }
+    const updatedUsers = [...users, newUser];
+    setUsers(updatedUsers);
+    localStorage.setItem('app_users', JSON.stringify(updatedUsers));
+    alert('User added successfully!');
+  };
+
+  const handleDeleteUser = (usernameToDelete: string) => {
+    if (usernameToDelete === 'main') {
+        alert("The default 'main' user cannot be deleted.");
+        return;
+    }
+    if (window.confirm(`Are you sure you want to delete the user "${usernameToDelete}"?`)) {
+        const updatedUsers = users.filter(user => user.username !== usernameToDelete);
+        setUsers(updatedUsers);
+        localStorage.setItem('app_users', JSON.stringify(updatedUsers));
+        alert('User deleted successfully!');
+    }
   };
 
   const handleImportQuizzes = (newQuizzes: Quiz[]) => {
@@ -171,6 +213,9 @@ const App: React.FC = () => {
     }
     return <AdminPanel 
               quizzes={quizzes}
+              users={users}
+              onAddUser={handleAddUser}
+              onDeleteUser={handleDeleteUser}
               onAddQuestion={handleAddQuestion}
               onImportQuizzes={handleImportQuizzes}
            />;
@@ -178,8 +223,8 @@ const App: React.FC = () => {
 
   const renderContent = () => {
     switch(view) {
-      case 'user_info':
-        return <UserInfo onSubmit={handleUserSubmit} />;
+      case 'user_login':
+        return <UserLogin onLogin={handleUserLogin} />;
       case 'quiz_hub':
         return <QuizHub 
                   quizzes={quizzes}
@@ -220,11 +265,11 @@ const App: React.FC = () => {
   };
   
   const getHeaderText = () => {
-    if(view === 'user_info') return 'IT Security Training Portal';
+    if(view === 'user_login') return 'IT Security Policy Login';
     if(view === 'quiz_hub') return 'Training Dashboard';
-    if(view === 'report') return 'Training Completion';
+    if(view === 'report') return 'Training Completion Report';
     if(activeQuiz) return activeQuiz.name;
-    return 'IT Security Training';
+    return 'IT Security Policy Training';
   };
 
   return (
@@ -233,7 +278,7 @@ const App: React.FC = () => {
         <header className="text-center mb-8">
           <h1 className="text-4xl md:text-5xl font-extrabold text-gradient mb-2 tracking-tight">{getHeaderText()}</h1>
           <p className="text-lg text-gray-500">
-             {view === 'user_info' && 'Enter your credentials to access the mandatory security assessment.'}
+             {view === 'user_login' && 'Please log in to begin your mandatory security assessment.'}
              {view === 'quiz_hub' && 'Complete all quizzes to generate your report.'}
              {view === 'report' && 'Submit your report to complete the training.'}
              {view === 'quiz_running' && 'Test your knowledge on essential security practices.'}
