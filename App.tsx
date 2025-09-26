@@ -220,7 +220,7 @@ const App: React.FC = () => {
   };
   
   const getHeaderText = () => {
-    if(view === 'user_info') return 'Welcome to Your Training';
+    if(view === 'user_info') return 'IT Security Training Portal';
     if(view === 'quiz_hub') return 'Training Dashboard';
     if(view === 'report') return 'Training Completion';
     if(activeQuiz) return activeQuiz.name;
@@ -233,7 +233,7 @@ const App: React.FC = () => {
         <header className="text-center mb-8">
           <h1 className="text-4xl md:text-5xl font-extrabold text-gradient mb-2 tracking-tight">{getHeaderText()}</h1>
           <p className="text-lg text-gray-500">
-             {view === 'user_info' && 'Please enter your details to begin.'}
+             {view === 'user_info' && 'Enter your credentials to access the mandatory security assessment.'}
              {view === 'quiz_hub' && 'Complete all quizzes to generate your report.'}
              {view === 'report' && 'Submit your report to complete the training.'}
              {view === 'quiz_running' && 'Test your knowledge on essential security practices.'}
