@@ -1,166 +1,227 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { QUIZ_QUESTIONS, TOPICS } from './constants';
-import { Question, Topic, UserAnswer } from './types';
+import React, { useState, useCallback, useMemo } from 'react';
+import { QUIZZES as INITIAL_QUIZZES } from './constants';
+import { Question, QuizProgress, TrainingReport, Quiz } from './types';
 import QuestionCard from './components/QuestionCard';
 import ResultsCard from './components/ResultsCard';
 import ProgressBar from './components/ProgressBar';
-import TopicSelection from './components/TopicSelection';
+import QuizHub from './components/QuizHub';
+import UserInfo from './components/UserInfo';
+import ReportCard from './components/ReportCard';
 import AdminLogin from './components/AdminLogin';
 import AdminPanel from './components/AdminPanel';
 
-type View = 'topic_selection' | 'quiz_running' | 'quiz_finished' | 'admin_login' | 'admin_panel';
+type View = 'user_info' | 'quiz_hub' | 'quiz_running' | 'quiz_finished' | 'report';
 
 const App: React.FC = () => {
-  const [view, setView] = useState<View>('topic_selection');
-  const [questions, setQuestions] = useState<Question[]>(QUIZ_QUESTIONS);
-  const [activeQuestions, setActiveQuestions] = useState<Question[]>([]);
+  const [view, setView] = useState<View>('user_info');
+  const [user, setUser] = useState<{ fullName: string, username: string } | null>(null);
+  const [quizzes, setQuizzes] = useState<Quiz[]>(INITIAL_QUIZZES);
+
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+
+  const initialProgress = useMemo(() => {
+    const progress: QuizProgress = {};
+    quizzes.forEach(quiz => {
+      progress[quiz.id] = { status: 'not_started', score: 0, total: quiz.questions.length, userAnswers: [] };
+    });
+    return progress;
+  }, [quizzes]);
+
+  const [quizProgress, setQuizProgress] = useState<QuizProgress>(initialProgress);
+  const [activeQuizId, setActiveQuizId] = useState<string | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
-  const [userAnswers, setUserAnswers] = useState<UserAnswer[]>([]);
-  const [score, setScore] = useState<number>(0);
-  const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('page') === 'admin') {
-      setView('admin_login');
-    }
-  }, []);
+  const isAdminView = useMemo(() => new URLSearchParams(window.location.search).get('page') === 'admin', []);
 
-  const handleAdminLogin = useCallback((password: string) => {
+  const handleAdminLogin = (password: string) => {
     if (password === 'dq.adm') {
-      setIsAdmin(true);
-      setView('admin_panel');
-    } else {
-      alert('Incorrect password.');
+      setIsAdminAuthenticated(true);
+      return true;
     }
+    return false;
+  };
+
+  const handleUserSubmit = useCallback((fullName: string, username: string) => {
+    setUser({ fullName, username });
+    setView('quiz_hub');
   }, []);
 
-  const handleAddQuestion = useCallback((newQuestionData: Omit<Question, 'id' | 'topicName'>) => {
-    const topic = TOPICS.find(t => t.id === newQuestionData.topicId);
-    if (!topic) {
-        alert('Invalid topic selected.');
-        return;
-    }
-    const newQuestion: Question = {
-        ...newQuestionData,
-        id: questions.length + 1,
-        topicName: topic.name,
-    };
-    setQuestions(prev => [...prev, newQuestion]);
-    alert('Question added successfully for this session!');
-  }, [questions]);
-
-  const handleSetQuestions = useCallback((newQuestions: Question[]) => {
-    setQuestions(newQuestions);
-    alert(`${newQuestions.length} questions imported successfully for this session!`);
-  }, []);
-
-  const handleExitAdmin = useCallback(() => {
-    setView('topic_selection');
-    window.history.pushState({}, '', window.location.pathname);
-  }, []);
-
-  const handleStartQuiz = useCallback((topicId: Topic | null) => {
-    let questionsToUse;
-    if (topicId) {
-      questionsToUse = questions.filter(q => q.topicId === topicId);
-    } else {
-      questionsToUse = [...questions];
-    }
-    
-    setActiveQuestions(questionsToUse.sort(() => Math.random() - 0.5));
+  const handleStartQuiz = useCallback((quizId: string) => {
+    setQuizProgress(prev => ({
+      ...prev,
+      [quizId]: { ...prev[quizId], status: 'in_progress', score: 0, userAnswers: [] }
+    }));
+    setActiveQuizId(quizId);
     setCurrentQuestionIndex(0);
-    setScore(0);
-    setUserAnswers([]);
     setView('quiz_running');
-  }, [questions]);
+  }, []);
+  
+  const activeQuiz = useMemo(() => {
+    if (!activeQuizId) return null;
+    return quizzes.find(q => q.id === activeQuizId);
+  }, [activeQuizId, quizzes]);
 
   const handleAnswer = useCallback((question: Question, isCorrect: boolean) => {
+    if (!activeQuizId) return;
     if (isCorrect) {
-      setScore(prev => prev + 1);
+      setQuizProgress(prev => ({
+        ...prev,
+        [activeQuizId]: {
+          ...prev[activeQuizId],
+          score: prev[activeQuizId].score + 1,
+        }
+      }));
     }
-    setUserAnswers(prev => [...prev, {
-      questionId: question.id,
-      topicId: question.topicId,
-      isCorrect,
-    }]);
-  }, []);
+    setQuizProgress(prev => ({
+      ...prev,
+      [activeQuizId]: {
+        ...prev[activeQuizId],
+        userAnswers: [...prev[activeQuizId].userAnswers, {
+          questionId: question.id,
+          isCorrect,
+          questionText: question.question,
+        }],
+      }
+    }));
+  }, [activeQuizId]);
 
   const handleNext = useCallback(() => {
+    if (!activeQuiz) return;
     const nextIndex = currentQuestionIndex + 1;
-    if (nextIndex < activeQuestions.length) {
+    if (nextIndex < activeQuiz.questions.length) {
       setCurrentQuestionIndex(nextIndex);
     } else {
+      setQuizProgress(prev => ({
+        ...prev,
+        [activeQuiz.id]: { ...prev[activeQuiz.id], status: 'completed' }
+      }));
       setView('quiz_finished');
     }
-  }, [currentQuestionIndex, activeQuestions.length]);
+  }, [currentQuestionIndex, activeQuiz]);
 
-  const handleRestart = useCallback(() => {
-    setView('topic_selection');
-    setActiveQuestions([]);
+  const handleReturnToHub = useCallback(() => {
+    setActiveQuizId(null);
     setCurrentQuestionIndex(0);
-    setScore(0);
-    setUserAnswers([]);
+    setView('quiz_hub');
   }, []);
+  
+  const handleGenerateReport = useCallback(() => {
+    setView('report');
+  }, []);
+
+  const handleSubmitReport = useCallback((reportData: TrainingReport) => {
+    const savedReportsRaw = localStorage.getItem('trainingReports');
+    const savedReports: TrainingReport[] = savedReportsRaw ? JSON.parse(savedReportsRaw) : [];
+    savedReports.push(reportData);
+    localStorage.setItem('trainingReports', JSON.stringify(savedReports));
+  }, []);
+
+  const handleRestartTraining = useCallback(() => {
+    setQuizProgress(initialProgress);
+    setUser(null);
+    setActiveQuizId(null);
+    setCurrentQuestionIndex(0);
+    setView('user_info');
+  }, [initialProgress]);
+
+  const handleAddQuestion = (quizId: string, question: Omit<Question, 'id'>) => {
+    setQuizzes(prevQuizzes => {
+        return prevQuizzes.map(quiz => {
+            if (quiz.id === quizId) {
+                const newQuestion: Question = {
+                    ...question,
+                    id: Date.now(), // Simple unique ID
+                };
+                return { ...quiz, questions: [...quiz.questions, newQuestion] };
+            }
+            return quiz;
+        });
+    });
+  };
+
+  const handleImportQuizzes = (newQuizzes: Quiz[]) => {
+    // Basic validation
+    if (Array.isArray(newQuizzes) && newQuizzes.every(q => q.id && q.name && Array.isArray(q.questions))) {
+        setQuizzes(newQuizzes);
+        alert('Quizzes imported successfully!');
+    } else {
+        alert('Invalid quiz file format.');
+    }
+  };
+
+  if (isAdminView) {
+    if (!isAdminAuthenticated) {
+        return <AdminLogin onLogin={handleAdminLogin} />;
+    }
+    return <AdminPanel 
+              quizzes={quizzes}
+              onAddQuestion={handleAddQuestion}
+              onImportQuizzes={handleImportQuizzes}
+           />;
+  }
 
   const renderContent = () => {
     switch(view) {
-      case 'admin_login':
-        return <AdminLogin onLogin={handleAdminLogin} />;
-      case 'admin_panel':
-        return <AdminPanel 
-                  questions={questions}
-                  onAddQuestion={handleAddQuestion} 
-                  onSetQuestions={handleSetQuestions}
-                  onExit={handleExitAdmin} 
+      case 'user_info':
+        return <UserInfo onSubmit={handleUserSubmit} />;
+      case 'quiz_hub':
+        return <QuizHub 
+                  quizzes={quizzes}
+                  quizProgress={quizProgress} 
+                  onStartQuiz={handleStartQuiz} 
+                  onGenerateReport={handleGenerateReport}
                 />;
-      case 'topic_selection':
-        return <TopicSelection onStartQuiz={handleStartQuiz} />;
       case 'quiz_running':
-        if (activeQuestions.length === 0 || !activeQuestions[currentQuestionIndex]) {
-          return (
-            <div className="p-8 text-center">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">No Questions Available</h2>
-              <p className="text-gray-500 mb-6">There are no questions for this topic yet. Add some from the admin panel!</p>
-              <button onClick={handleRestart} className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md transition-all duration-300 hover:scale-105">Back to Topics</button>
-            </div>
-          );
+        if (!activeQuiz || activeQuiz.questions.length === 0) {
+          return <div className="p-8 text-center">There was an unexpected error. Finish what you were doing.</div>;
         }
         return (
           <div className="p-6 md:p-8">
-            <ProgressBar current={currentQuestionIndex + 1} total={activeQuestions.length} />
+            <ProgressBar current={currentQuestionIndex + 1} total={activeQuiz.questions.length} />
             <QuestionCard
-              question={activeQuestions[currentQuestionIndex]}
+              question={activeQuiz.questions[currentQuestionIndex]}
               onAnswer={handleAnswer}
               onNext={handleNext}
             />
           </div>
         );
       case 'quiz_finished':
+        return <ResultsCard onReturnToHub={handleReturnToHub} />;
+      case 'report':
+        if (!user) return null;
         return (
-          <ResultsCard 
-            score={score} 
-            totalQuestions={activeQuestions.length} 
-            userAnswers={userAnswers}
-            onRestart={handleRestart} 
+          <ReportCard 
+            user={user}
+            quizProgress={quizProgress}
+            quizzes={quizzes}
+            onSubmitReport={handleSubmitReport}
+            onRestart={handleRestartTraining}
           />
         );
       default:
         return null;
     }
   };
+  
+  const getHeaderText = () => {
+    if(view === 'user_info') return 'Welcome to Your Training';
+    if(view === 'quiz_hub') return 'Training Dashboard';
+    if(view === 'report') return 'Training Completion';
+    if(activeQuiz) return activeQuiz.name;
+    return 'IT Security Training';
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 font-sans">
+    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4 font-sans">
       <div className="w-full max-w-2xl mx-auto">
         <header className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-gradient mb-2 tracking-tight">IT Security Policy Quiz</h1>
-          {view !== 'admin_login' && view !== 'admin_panel' &&
-            <p className="text-lg text-gray-500">Test your knowledge on essential security practices.</p>
-          }
-           { (view === 'admin_login' || view === 'admin_panel') &&
-            <p className="text-lg text-gray-500">Administrator Panel</p>
-          }
+          <h1 className="text-4xl md:text-5xl font-extrabold text-gradient mb-2 tracking-tight">{getHeaderText()}</h1>
+          <p className="text-lg text-gray-500">
+             {view === 'user_info' && 'Please enter your details to begin.'}
+             {view === 'quiz_hub' && 'Complete all quizzes to generate your report.'}
+             {view === 'report' && 'Submit your report to complete the training.'}
+             {view === 'quiz_running' && 'Test your knowledge on essential security practices.'}
+          </p>
         </header>
         <main className="bg-white rounded-2xl shadow-lg border border-gray-200 transition-all duration-500 min-h-[450px] flex flex-col justify-center">
           {renderContent()}

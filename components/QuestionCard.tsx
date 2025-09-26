@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Question } from '../types';
-import TopicIcon from './TopicIcon';
 
 interface QuestionCardProps {
   question: Question;
@@ -39,14 +38,9 @@ const QuestionCard: React.FC<QuestionCardProps> = ({ question, onAnswer, onNext 
 
   return (
     <div className="animate-fade-in">
-      <div className="flex items-center gap-4 mb-6">
-        <div className="flex-shrink-0">
-          <TopicIcon topicId={question.topicId} />
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-blue-600 uppercase tracking-wider">{question.topicName}</p>
-          <h2 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight mt-1">{question.question}</h2>
-        </div>
+      <div className="mb-6">
+        <p className="text-sm font-semibold text-blue-600 uppercase tracking-wider">{question.category}</p>
+        <h2 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight mt-1">{question.question}</h2>
       </div>
       <div className="space-y-3">
         {question.options.map((option) => (

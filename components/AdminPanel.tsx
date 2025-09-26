@@ -1,182 +1,176 @@
-import React, { useState, useMemo, useRef } from 'react';
-import { Question, Topic } from '../types';
-import { TOPICS } from '../constants';
+import React, { useState, useRef } from 'react';
+import { AdminPanelProps, Question, Quiz } from '../types';
+import AdminDashboard from './AdminDashboard';
 
-interface AdminPanelProps {
-  questions: Question[];
-  onAddQuestion: (question: Omit<Question, 'id' | 'topicName'>) => void;
-  onSetQuestions: (questions: Question[]) => void;
-  onExit: () => void;
-}
+const AdminPanel: React.FC<AdminPanelProps> = ({ quizzes, onAddQuestion, onImportQuizzes }) => {
+    const [activeTab, setActiveTab] = useState<'reports' | 'questions'>('reports');
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ questions, onAddQuestion, onSetQuestions, onExit }) => {
-  const [topicId, setTopicId] = useState<Topic>(TOPICS[0].id);
-  const [question, setQuestion] = useState('');
-  const [options, setOptions] = useState(['', '', '', '']);
-  const [correctAnswer, setCorrectAnswer] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-
-  const handleOptionChange = (index: number, value: string) => {
-    const newOptions = [...options];
-    newOptions[index] = value;
-    setOptions(newOptions);
-  };
-  
-  const validOptions = useMemo(() => options.filter(opt => opt.trim() !== ''), [options]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (question.trim() === '' || validOptions.length < 2 || correctAnswer.trim() === '' || !validOptions.includes(correctAnswer)) {
-      alert('Please fill out all fields. You must provide at least 2 options and select a valid correct answer.');
-      return;
-    }
-
-    onAddQuestion({
-      topicId,
-      question,
-      options: validOptions,
-      correctAnswer,
+    const [newQuestion, setNewQuestion] = useState({
+        quizId: quizzes[0]?.id || '',
+        category: '',
+        question: '',
+        options: ['', '', '', ''],
+        correctAnswer: '',
     });
-    
-    setQuestion('');
-    setOptions(['', '', '', '']);
-    setCorrectAnswer('');
-  };
 
-  const handleExport = () => {
-    const dataStr = JSON.stringify(questions, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    
-    const exportFileDefaultName = 'questions.json';
-    
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
-  };
-
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        try {
-            const result = e.target?.result;
-            if (typeof result !== 'string') throw new Error("File is not readable");
-            const parsedQuestions = JSON.parse(result);
-            if (Array.isArray(parsedQuestions) && parsedQuestions.every(q => 'question' in q && 'options' in q)) {
-                onSetQuestions(parsedQuestions);
-            } else {
-                throw new Error("Invalid question format in JSON file.");
-            }
-        } catch (error) {
-            alert(`Error reading file: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        } finally {
-            // Reset file input value to allow re-uploading the same file
-            if(fileInputRef.current) {
-                fileInputRef.current.value = '';
-            }
-        }
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        setNewQuestion(prev => ({ ...prev, [name]: value }));
     };
-    reader.readAsText(file);
-  };
 
+    const handleOptionChange = (index: number, value: string) => {
+        const newOptions = [...newQuestion.options];
+        newOptions[index] = value;
+        setNewQuestion(prev => ({ ...prev, options: newOptions }));
+    };
 
-  const commonInputClasses = "w-full p-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200";
+    const handleAddQuestionSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        const { quizId, question, options, correctAnswer } = newQuestion;
+        if (!quizId || !question || options.some(o => !o.trim()) || !correctAnswer) {
+            alert("Please fill out all fields.");
+            return;
+        }
+        
+        const selectedQuiz = quizzes.find(q => q.id === quizId);
+        if (!selectedQuiz) {
+             alert("Selected quiz category not found.");
+             return;
+        }
 
-  return (
-    <div className="p-6 md:p-8 animate-fade-in">
-      <div className="bg-yellow-100 border border-yellow-300 text-yellow-800 p-4 rounded-lg mb-6 text-center text-sm">
-        <p><strong>Note:</strong> Changes made here are for the current session only. Use Export/Import to save and load your work.</p>
-      </div>
-      
-      <div className="border-b border-gray-200 mb-6 pb-4">
-        <h2 className="text-xl font-bold text-gray-800 mb-2">Data Management</h2>
-         <div className="flex gap-4">
-            <button onClick={handleImportClick} className="flex-1 px-4 py-2 bg-white border border-gray-300 hover:bg-gray-100 text-gray-800 font-bold rounded-lg transition-colors duration-200">Import from JSON</button>
-            <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".json" className="hidden" />
-            <button onClick={handleExport} className="flex-1 px-4 py-2 bg-white border border-gray-300 hover:bg-gray-100 text-gray-800 font-bold rounded-lg transition-colors duration-200">Export to JSON</button>
-        </div>
-      </div>
+        const questionToAdd: Omit<Question, 'id'> = {
+            category: selectedQuiz.name,
+            question,
+            options,
+            correctAnswer,
+        };
+        onAddQuestion(quizId, questionToAdd);
+        
+        // Reset form
+        setNewQuestion({
+            quizId: quizId,
+            category: '',
+            question: '',
+            options: ['', '', '', ''],
+            correctAnswer: '',
+        });
+        alert("Question added successfully!");
+    };
+    
+    const handleExport = () => {
+        const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
+            JSON.stringify(quizzes, null, 2)
+        )}`;
+        const link = document.createElement("a");
+        link.href = jsonString;
+        link.download = "quizzes.json";
+        link.click();
+    };
 
-      <h2 className="text-xl font-bold text-gray-800 mb-6">Add a New Question</h2>
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label htmlFor="topic" className="block text-sm font-medium text-gray-600 mb-2">Topic</label>
-          <select
-            id="topic"
-            value={topicId}
-            onChange={(e) => setTopicId(Number(e.target.value) as Topic)}
-            className={commonInputClasses}
-          >
-            {TOPICS.map(topic => (
-              <option key={topic.id} value={topic.id}>{topic.name}</option>
-            ))}
-          </select>
+    const handleImportClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const text = e.target?.result;
+                if (typeof text !== 'string') throw new Error("File is not valid text.");
+                const importedQuizzes = JSON.parse(text);
+                onImportQuizzes(importedQuizzes);
+            } catch (error) {
+                console.error("Failed to import quizzes:", error);
+                alert("Failed to import quizzes. Please check the file format.");
+            }
+        };
+        reader.readAsText(file);
+    };
+
+    const commonInputClasses = "w-full p-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500";
+    
+    return (
+        <div className="min-h-screen bg-gray-100 flex flex-col items-center p-4 font-sans">
+            <div className="w-full max-w-4xl mx-auto">
+                <header className="text-center mb-8">
+                    <h1 className="text-4xl md:text-5xl font-extrabold text-gradient mb-2 tracking-tight">Administrator Panel</h1>
+                    <p className="text-lg text-gray-500">Manage quizzes and review user reports.</p>
+                </header>
+                <main className="bg-white rounded-2xl shadow-lg border border-gray-200">
+                    <div className="border-b border-gray-200">
+                        <nav className="flex space-x-2 p-2" aria-label="Tabs">
+                            <button onClick={() => setActiveTab('reports')} className={`px-4 py-2 text-sm font-medium rounded-md ${activeTab === 'reports' ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:text-gray-700'}`}>
+                                User Reports
+                            </button>
+                            <button onClick={() => setActiveTab('questions')} className={`px-4 py-2 text-sm font-medium rounded-md ${activeTab === 'questions' ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:text-gray-700'}`}>
+                                Question Management
+                            </button>
+                        </nav>
+                    </div>
+                    <div className="p-6 md:p-8">
+                        {activeTab === 'reports' && <AdminDashboard />}
+                        {activeTab === 'questions' && (
+                            <div className="animate-fade-in">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    {/* Add Question Form */}
+                                    <div>
+                                        <h2 className="text-2xl font-bold mb-4 border-b pb-2">Add New Question</h2>
+                                        <form onSubmit={handleAddQuestionSubmit} className="space-y-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-600 mb-1">Category</label>
+                                                <select name="quizId" value={newQuestion.quizId} onChange={handleInputChange} className={commonInputClasses}>
+                                                    {quizzes.map(quiz => <option key={quiz.id} value={quiz.id}>{quiz.name}</option>)}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-600 mb-1">Question Text</label>
+                                                <textarea name="question" value={newQuestion.question} onChange={handleInputChange} rows={3} className={commonInputClasses} />
+                                            </div>
+                                            {newQuestion.options.map((option, index) => (
+                                                 <div key={index}>
+                                                    <label className="block text-sm font-medium text-gray-600 mb-1">Option {index + 1}</label>
+                                                    <input type="text" value={option} onChange={(e) => handleOptionChange(index, e.target.value)} className={commonInputClasses} />
+                                                </div>
+                                            ))}
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-600 mb-1">Correct Answer</label>
+                                                <select name="correctAnswer" value={newQuestion.correctAnswer} onChange={handleInputChange} className={commonInputClasses}>
+                                                    <option value="">Select the correct answer</option>
+                                                    {newQuestion.options.filter(o => o.trim()).map(option => <option key={option} value={option}>{option}</option>)}
+                                                </select>
+                                            </div>
+                                            <button type="submit" className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors">Add Question</button>
+                                        </form>
+                                    </div>
+                                    {/* Data Management */}
+                                    <div>
+                                         <h2 className="text-2xl font-bold mb-4 border-b pb-2">Data Management</h2>
+                                         <div className="space-y-4 p-4 bg-gray-50 rounded-lg border">
+                                            <div>
+                                                <h3 className="font-semibold text-lg">Export Quizzes</h3>
+                                                <p className="text-sm text-gray-600 mb-2">Save the current set of all questions to a JSON file.</p>
+                                                <button onClick={handleExport} className="w-full px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg">Export to JSON</button>
+                                            </div>
+                                            <div className="border-t pt-4">
+                                                <h3 className="font-semibold text-lg">Import Quizzes</h3>
+                                                <p className="text-sm text-gray-600 mb-2">Load questions from a JSON file. This will replace the current set of questions.</p>
+                                                <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".json" className="hidden" />
+                                                <button onClick={handleImportClick} className="w-full px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg">Import from JSON</button>
+                                            </div>
+                                         </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </main>
+            </div>
         </div>
-        <div>
-          <label htmlFor="question" className="block text-sm font-medium text-gray-600 mb-2">Question</label>
-          <textarea
-            id="question"
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            className={commonInputClasses}
-            rows={3}
-            placeholder="What is the capital of..."
-          />
-        </div>
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-600">Options</label>
-          {options.map((option, index) => (
-            <input
-              key={index}
-              type="text"
-              value={option}
-              onChange={(e) => handleOptionChange(index, e.target.value)}
-              placeholder={`Option ${index + 1}`}
-              className={commonInputClasses}
-            />
-          ))}
-        </div>
-        <div>
-          <label htmlFor="correctAnswer" className="block text-sm font-medium text-gray-600 mb-2">Correct Answer</label>
-          <select
-            id="correctAnswer"
-            value={correctAnswer}
-            onChange={(e) => setCorrectAnswer(e.target.value)}
-            className={commonInputClasses}
-            disabled={validOptions.length === 0}
-          >
-            <option value="">Select the correct answer...</option>
-            {validOptions.map(option => (
-              <option key={option} value={option}>{option}</option>
-            ))}
-          </select>
-        </div>
-        <div className="flex justify-between items-center pt-4">
-            <button
-                type="button"
-                onClick={onExit}
-                className="px-6 py-3 bg-white border border-gray-300 hover:bg-gray-100 text-gray-800 font-bold rounded-lg transition-colors duration-200"
-            >
-                Back to Quiz
-            </button>
-            <button
-                type="submit"
-                className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-transform duration-200 transform hover:scale-105 shadow-md"
-            >
-                Add Question
-            </button>
-        </div>
-      </form>
-    </div>
-  );
+    );
 };
 
 export default AdminPanel;

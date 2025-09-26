@@ -1,174 +1,130 @@
+import { Quiz } from './types';
 
-import { Question, Topic } from './types';
-
-export const TOPICS = [
-  { id: Topic.PASSWORD_SECURITY, name: "Password & Account Security" },
-  { id: Topic.DATA_PROTECTION, name: "Data Protection & Handling" },
-  { id: Topic.EMAIL_SECURITY, name: "Email & Communication Security" },
-  { id: Topic.DEVICE_USAGE, name: "Device & Internet Usage" },
-  { id: Topic.PHYSICAL_SECURITY, name: "Physical Security" },
-  { id: Topic.INCIDENT_REPORTING, name: "Incident Reporting" },
-  { id: Topic.SOCIAL_ENGINEERING, name: "Social Engineering Awareness" },
-  { id: Topic.ACCEPTABLE_USE, name: "Acceptable Use & Compliance" },
-  { id: Topic.REMOTE_WORK, name: "Remote Work & BYOD Awareness" },
-  { id: Topic.BACKUP_RECOVERY, name: "Backup & Recovery Awareness" },
-];
-
-export const QUIZ_QUESTIONS: Question[] = [
+export const QUIZZES: Quiz[] = [
   {
-    id: 1,
-    topicId: Topic.PASSWORD_SECURITY,
-    topicName: "Password & Account Security",
-    question: "What is the primary purpose of Multi-Factor Authentication (MFA)?",
-    options: [
-      "To make passwords longer",
-      "To add an extra layer of security beyond just a password",
-      "To share your account with a colleague safely",
-      "To automatically change your password every month",
+    id: 'password_security',
+    name: "Password Security",
+    questions: [
+      {
+        id: 1,
+        category: "Password Security",
+        question: "What is the primary purpose of Multi-Factor Authentication (MFA)?",
+        options: [
+          "To make passwords longer",
+          "To add an extra layer of security beyond just a password",
+          "To share your account with a colleague safely",
+          "To automatically change your password every month",
+        ],
+        correctAnswer: "To add an extra layer of security beyond just a password",
+      },
+      {
+        id: 2,
+        category: "Password Security",
+        question: "Which of these is the strongest password?",
+        options: [
+          "Password123!",
+          "MyDogFido2024",
+          "R#8k&Zp@w!q2v$J9",
+          "qwertyuiop",
+        ],
+        correctAnswer: "R#8k&Zp@w!q2v$J9",
+      },
+       {
+        id: 3,
+        category: "Password Security",
+        question: "An individual calls you claiming to be from IT support and asks for your password to fix an issue. How should you respond?",
+        options: [
+          "Provide your password, as they are from IT",
+          "Ask them for their name and employee ID first",
+          "Refuse the request and report the call to the official IT department using a known number",
+          "Give them a temporary password",
+        ],
+        correctAnswer: "Refuse the request and report the call to the official IT department using a known number",
+      },
     ],
-    correctAnswer: "To add an extra layer of security beyond just a password",
   },
   {
-    id: 2,
-    topicId: Topic.DATA_PROTECTION,
-    topicName: "Data Protection & Handling",
-    question: "Where should you store confidential company files?",
-    options: [
-      "On your personal Google Drive",
-      "In your email drafts folder",
-      "In company-approved cloud storage or network drives",
-      "On a USB stick you keep on your desk",
-    ],
-    correctAnswer: "In company-approved cloud storage or network drives",
+    id: 'data_protection',
+    name: "Data Protection",
+    questions: [
+       {
+        id: 4,
+        category: "Data Protection",
+        question: "Where should you store confidential company files?",
+        options: [
+          "On your personal Google Drive",
+          "In your email drafts folder",
+          "In company-approved cloud storage or network drives",
+          "On a USB stick you keep on your desk",
+        ],
+        correctAnswer: "In company-approved cloud storage or network drives",
+      },
+       {
+        id: 5,
+        category: "Data Protection",
+        question: "What does a 'clean desk policy' primarily help prevent?",
+        options: [
+          "Making the office look messy",
+          "Losing your coffee mug",
+          "Unauthorized access to sensitive information left on a desk",
+          "Forgetting your tasks for the day",
+        ],
+        correctAnswer: "Unauthorized access to sensitive information left on a desk",
+      },
+      {
+        id: 6,
+        category: "Data Protection",
+        question: "Why is it risky to use public Wi-Fi without a VPN for work?",
+        options: [
+          "It can be slow and unreliable",
+          "Attackers on the same network can intercept your data",
+          "It uses up your mobile data plan",
+          "It is always safe if the Wi-Fi has a password",
+        ],
+        correctAnswer: "Attackers on the same network can intercept your data",
+      },
+    ]
   },
   {
-    id: 3,
-    topicId: Topic.EMAIL_SECURITY,
-    topicName: "Email & Communication Security",
-    question: "You receive an email with an urgent request from 'your CEO' to transfer funds. What is the first thing you should do?",
-    options: [
-      "Reply to the email to confirm the amount",
-      "Transfer the funds immediately as requested",
-      "Verify the request through a different communication channel (e.g., phone call)",
-      "Forward the email to the finance department",
-    ],
-    correctAnswer: "Verify the request through a different communication channel (e.g., phone call)",
-  },
-  {
-    id: 4,
-    topicId: Topic.DEVICE_USAGE,
-    topicName: "Device & Internet Usage",
-    question: "Why is it risky to use public Wi-Fi without a VPN for work?",
-    options: [
-      "It can be slow and unreliable",
-      "Attackers on the same network can intercept your data",
-      "It uses up your mobile data plan",
-      "It is always safe if the Wi-Fi has a password",
-    ],
-    correctAnswer: "Attackers on the same network can intercept your data",
-  },
-  {
-    id: 5,
-    topicId: Topic.PHYSICAL_SECURITY,
-    topicName: "Physical Security",
-    question: "What does a 'clean desk policy' primarily help prevent?",
-    options: [
-      "Making the office look messy",
-      "Losing your coffee mug",
-      "Unauthorized access to sensitive information left on a desk",
-      "Forgetting your tasks for the day",
-    ],
-    correctAnswer: "Unauthorized access to sensitive information left on a desk",
-  },
-  {
-    id: 6,
-    topicId: Topic.INCIDENT_REPORTING,
-    topicName: "Incident Reporting",
-    question: "If you suspect your work computer has malware, what should you do?",
-    options: [
-      "Try to remove it yourself with free software from the internet",
-      "Ignore it and hope it goes away",
-      "Immediately disconnect from the network and report it to the IT/security team",
-      "Ask a coworker what they think you should do",
-    ],
-    correctAnswer: "Immediately disconnect from the network and report it to the IT/security team",
-  },
-  {
-    id: 7,
-    topicId: Topic.SOCIAL_ENGINEERING,
-    topicName: "Social Engineering Awareness",
-    question: "An individual calls you claiming to be from IT support and asks for your password to fix an issue. How should you respond?",
-    options: [
-      "Provide your password, as they are from IT",
-      "Ask them for their name and employee ID first",
-      "Refuse the request and report the call to the official IT department using a known number",
-      "Give them a temporary password",
-    ],
-    correctAnswer: "Refuse the request and report the call to the official IT department using a known number",
-  },
-  {
-    id: 8,
-    topicId: Topic.ACCEPTABLE_USE,
-    topicName: "Acceptable Use & Compliance",
-    question: "Which of the following is generally considered an unacceptable use of company IT resources?",
-    options: [
-      "Checking the weather forecast",
-      "Running a personal online business",
-      "A quick 5-minute check of personal email during a lunch break",
-      "Looking up work-related information online",
-    ],
-    correctAnswer: "Running a personal online business",
-  },
-  {
-    id: 9,
-    topicId: Topic.REMOTE_WORK,
-    topicName: "Remote Work & BYOD Awareness",
-    question: "When working remotely, the most secure way to connect to the company network is through:",
-    options: [
-      "Your home Wi-Fi",
-      "A public coffee shop Wi-Fi",
-      "A company-approved VPN (Virtual Private Network)",
-      "Tethering to your mobile phone's hotspot",
-    ],
-    correctAnswer: "A company-approved VPN (Virtual Private Network)",
-  },
-  {
-    id: 10,
-    topicId: Topic.BACKUP_RECOVERY,
-    topicName: "Backup & Recovery Awareness",
-    question: "What is the main reason for regularly backing up company data?",
-    options: [
-      "To free up space on your hard drive",
-      "To ensure data can be recovered in case of loss, corruption, or a ransomware attack",
-      "To have a copy of your work to take to a new job",
-      "To make it easier to share files with others",
-    ],
-    correctAnswer: "To ensure data can be recovered in case of loss, corruption, or a ransomware attack",
-  },
-  {
-    id: 11,
-    topicId: Topic.PASSWORD_SECURITY,
-    topicName: "Password & Account Security",
-    question: "Which of these is the strongest password?",
-    options: [
-      "Password123!",
-      "MyDogFido2024",
-      "R#8k&Zp@w!q2v$J9",
-      "qwertyuiop",
-    ],
-    correctAnswer: "R#8k&Zp@w!q2v$J9",
-  },
-  {
-    id: 12,
-    topicId: Topic.EMAIL_SECURITY,
-    topicName: "Email & Communication Security",
-    question: "What is 'phishing'?",
-    options: [
-      "A method for catching fish using technology",
-      "A type of computer virus that deletes files",
-      "A fraudulent attempt to obtain sensitive information by disguising as a trustworthy entity in electronic communication",
-      "An internal company messaging system",
-    ],
-    correctAnswer: "A fraudulent attempt to obtain sensitive information by disguising as a trustworthy entity in electronic communication",
-  },
+    id: 'product_knowledge',
+    name: "Product Knowledge",
+    questions: [
+      {
+        id: 7,
+        category: "Product Knowledge",
+        question: "What is the core function of our 'SecureFlow' VPN product?",
+        options: [
+          "To block all incoming emails",
+          "To create a secure, encrypted connection to the company network",
+          "To automatically back up all files to the cloud",
+          "To monitor employee productivity",
+        ],
+        correctAnswer: "To create a secure, encrypted connection to the company network",
+      },
+      {
+        id: 8,
+        category: "Product Knowledge",
+        question: "Which feature of 'DataGuard' software helps prevent unauthorized data sharing?",
+        options: [
+          "File compression",
+          "Spell check",
+          "Data Loss Prevention (DLP) policies",
+          "Customizable color themes",
+        ],
+        correctAnswer: "Data Loss Prevention (DLP) policies",
+      },
+      {
+        id: 9,
+        category: "Product Knowledge",
+        question: "A client reports a suspected phishing email. Which product should they use to analyze and report it?",
+        options: [
+          "SecureFlow VPN",
+          "PhishFinder AI",
+          "DataGuard",
+          "PasswordVault",
+        ],
+        correctAnswer: "PhishFinder AI",
+      }
+    ]
+  }
 ];
