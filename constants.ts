@@ -3,11 +3,11 @@ import { Quiz } from './types';
 export const QUIZZES: Quiz[] = [
   {
     id: 'password_security',
-    name: "Password Security",
+    name: "Password & Account Security",
     questions: [
       {
         id: 1,
-        category: "Password Security",
+        category: "Password & Account Security",
         question: "What is the primary purpose of Multi-Factor Authentication (MFA)?",
         options: [
           "To make passwords longer",
@@ -19,7 +19,7 @@ export const QUIZZES: Quiz[] = [
       },
       {
         id: 2,
-        category: "Password Security",
+        category: "Password & Account Security",
         question: "Which of these is the strongest password?",
         options: [
           "Password123!",
@@ -29,27 +29,15 @@ export const QUIZZES: Quiz[] = [
         ],
         correctAnswer: "R#8k&Zp@w!q2v$J9",
       },
-       {
-        id: 3,
-        category: "Password Security",
-        question: "An individual calls you claiming to be from IT support and asks for your password to fix an issue. How should you respond?",
-        options: [
-          "Provide your password, as they are from IT",
-          "Ask them for their name and employee ID first",
-          "Refuse the request and report the call to the official IT department using a known number",
-          "Give them a temporary password",
-        ],
-        correctAnswer: "Refuse the request and report the call to the official IT department using a known number",
-      },
     ],
   },
   {
-    id: 'data_protection',
-    name: "Data Protection",
+    id: 'data_protection_handling',
+    name: "Data Protection & Handling",
     questions: [
        {
-        id: 4,
-        category: "Data Protection",
+        id: 3,
+        category: "Data Protection & Handling",
         question: "Where should you store confidential company files?",
         options: [
           "On your personal Google Drive",
@@ -60,20 +48,44 @@ export const QUIZZES: Quiz[] = [
         correctAnswer: "In company-approved cloud storage or network drives",
       },
        {
-        id: 5,
-        category: "Data Protection",
-        question: "What does a 'clean desk policy' primarily help prevent?",
+        id: 4,
+        category: "Data Protection & Handling",
+        question: "What does 'data classification' help you do?",
         options: [
-          "Making the office look messy",
-          "Losing your coffee mug",
-          "Unauthorized access to sensitive information left on a desk",
-          "Forgetting your tasks for the day",
+          "Delete old files automatically",
+          "Understand the sensitivity of data and how to handle it",
+          "Share files more quickly with anyone",
+          "Encrypt your entire hard drive",
         ],
-        correctAnswer: "Unauthorized access to sensitive information left on a desk",
+        correctAnswer: "Understand the sensitivity of data and how to handle it",
       },
+    ]
+  },
+  {
+    id: 'email_communication_security',
+    name: "Email & Communication Security",
+    questions: [
+      {
+        id: 5,
+        category: "Email & Communication Security",
+        question: "You receive an unexpected email with a link to reset your password. What should you do?",
+        options: [
+          "Click the link and reset your password immediately",
+          "Forward the email to the IT department, then delete it",
+          "Ignore and delete the email without clicking the link",
+          "Reply to ask if the sender is legitimate",
+        ],
+        correctAnswer: "Ignore and delete the email without clicking the link",
+      },
+    ]
+  },
+  {
+    id: 'device_internet_usage',
+    name: "Device & Internet Usage",
+    questions: [
       {
         id: 6,
-        category: "Data Protection",
+        category: "Device & Internet Usage",
         question: "Why is it risky to use public Wi-Fi without a VPN for work?",
         options: [
           "It can be slow and unreliable",
@@ -86,45 +98,111 @@ export const QUIZZES: Quiz[] = [
     ]
   },
   {
-    id: 'product_knowledge',
-    name: "Product Knowledge",
+    id: 'physical_security',
+    name: "Physical Security",
     questions: [
       {
         id: 7,
-        category: "Product Knowledge",
-        question: "What is the core function of our 'SecureFlow' VPN product?",
+        category: "Physical Security",
+        question: "What does a 'clean desk policy' primarily help prevent?",
         options: [
-          "To block all incoming emails",
-          "To create a secure, encrypted connection to the company network",
-          "To automatically back up all files to the cloud",
-          "To monitor employee productivity",
+          "Making the office look messy",
+          "Losing your coffee mug",
+          "Unauthorized access to sensitive information left on a desk",
+          "Forgetting your tasks for the day",
         ],
-        correctAnswer: "To create a secure, encrypted connection to the company network",
+        correctAnswer: "Unauthorized access to sensitive information left on a desk",
       },
+    ]
+  },
+  {
+    id: 'incident_reporting',
+    name: "Incident Reporting",
+    questions: [
       {
         id: 8,
-        category: "Product Knowledge",
-        question: "Which feature of 'DataGuard' software helps prevent unauthorized data sharing?",
+        category: "Incident Reporting",
+        question: "You accidentally click on a suspicious link in an email. What should be your immediate next step?",
         options: [
-          "File compression",
-          "Spell check",
-          "Data Loss Prevention (DLP) policies",
-          "Customizable color themes",
+          "Disconnect your computer from the network and report it to IT immediately",
+          "Run a virus scan and hope for the best",
+          "Delete the email and don't tell anyone",
+          "Restart your computer",
         ],
-        correctAnswer: "Data Loss Prevention (DLP) policies",
+        correctAnswer: "Disconnect your computer from the network and report it to IT immediately",
       },
+    ]
+  },
+  {
+    id: 'social_engineering_awareness',
+    name: "Social Engineering Awareness",
+    questions: [
       {
         id: 9,
-        category: "Product Knowledge",
-        question: "A client reports a suspected phishing email. Which product should they use to analyze and report it?",
+        category: "Social Engineering Awareness",
+        question: "An individual calls you claiming to be from IT support and asks for your password to fix an issue. How should you respond?",
         options: [
-          "SecureFlow VPN",
-          "PhishFinder AI",
-          "DataGuard",
-          "PasswordVault",
+          "Provide your password, as they are from IT",
+          "Ask them for their name and employee ID first",
+          "Refuse the request and report the call to the official IT department using a known number",
+          "Give them a temporary password",
         ],
-        correctAnswer: "PhishFinder AI",
-      }
+        correctAnswer: "Refuse the request and report the call to the official IT department using a known number",
+      },
+    ]
+  },
+  {
+    id: 'acceptable_use_compliance',
+    name: "Acceptable Use & Compliance",
+    questions: [
+      {
+        id: 10,
+        category: "Acceptable Use & Compliance",
+        question: "Is it acceptable to use your company email for personal activities like online shopping?",
+        options: [
+          "Yes, as long as it's not excessive",
+          "Only for emergencies",
+          "No, company resources should be used for business purposes only",
+          "Yes, it is more secure than a personal email",
+        ],
+        correctAnswer: "No, company resources should be used for business purposes only",
+      },
+    ]
+  },
+  {
+    id: 'remote_work_byod',
+    name: "Remote Work & BYOD",
+    questions: [
+      {
+        id: 11,
+        category: "Remote Work & BYOD",
+        question: "When working from home, which of the following is most important for security?",
+        options: [
+          "Having a comfortable chair",
+          "Using a secure Wi-Fi network with a strong password",
+          "Taking breaks every hour",
+          "Having a large monitor",
+        ],
+        correctAnswer: "Using a secure Wi-Fi network with a strong password",
+      },
+    ]
+  },
+  {
+    id: 'backup_recovery_awareness',
+    name: "Backup & Recovery Awareness",
+    questions: [
+      {
+        id: 12,
+        category: "Backup & Recovery Awareness",
+        question: "What is the primary reason for regularly backing up company data?",
+        options: [
+          "To free up space on your computer",
+          "To ensure data can be recovered in case of loss or corruption",
+          "To comply with email retention policies",
+          "To make files easier to search",
+        ],
+        correctAnswer: "To ensure data can be recovered in case of loss or corruption",
+      },
     ]
   }
 ];

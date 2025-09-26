@@ -109,11 +109,27 @@ const App: React.FC = () => {
     setView('report');
   }, []);
 
-  const handleSubmitReport = useCallback((reportData: TrainingReport) => {
-    const savedReportsRaw = localStorage.getItem('trainingReports');
-    const savedReports: TrainingReport[] = savedReportsRaw ? JSON.parse(savedReportsRaw) : [];
-    savedReports.push(reportData);
-    localStorage.setItem('trainingReports', JSON.stringify(savedReports));
+  const handleSubmitReport = useCallback(async (reportData: TrainingReport) => {
+    const API_BASE = 'https://iso27001-pnrp.onrender.com/api/reports';
+    try {
+        const response = await fetch(API_BASE, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(reportData),
+        });
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+    } catch (error) {
+        console.error("Failed to submit report to server, saving locally:", error);
+        // Fallback to local storage
+        const savedReportsRaw = localStorage.getItem('trainingReports');
+        const savedReports: TrainingReport[] = savedReportsRaw ? JSON.parse(savedReportsRaw) : [];
+        savedReports.push(reportData);
+        localStorage.setItem('trainingReports', JSON.stringify(savedReports));
+    }
   }, []);
 
   const handleRestartTraining = useCallback(() => {

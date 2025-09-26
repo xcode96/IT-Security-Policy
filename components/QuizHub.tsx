@@ -52,9 +52,14 @@ const QuizHub: React.FC<QuizHubProps> = ({ quizzes, quizProgress, onStartQuiz, o
                 {getStatusPill(progress.status)}
                 <button
                   onClick={() => onStartQuiz(quiz.id)}
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-sm transition-transform duration-200 transform hover:scale-105 shadow-sm"
+                  disabled={isCompleted}
+                  className={`px-5 py-2 text-white font-semibold rounded-lg text-sm transition-all duration-200 transform shadow-sm ${
+                    isCompleted 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-blue-600 hover:bg-blue-700 hover:scale-105'
+                  }`}
                 >
-                  {isCompleted ? 'Retake' : 'Start'}
+                  {isCompleted ? 'Completed' : 'Start'}
                 </button>
               </div>
             </div>
