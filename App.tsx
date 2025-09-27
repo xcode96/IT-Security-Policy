@@ -313,7 +313,6 @@ const App: React.FC = () => {
   
   const getHeaderText = () => {
     if(view === 'report') return 'Completion Report';
-    if(view === 'quiz_finished' && activeQuiz) return activeQuiz.name;
     if(activeQuiz) return activeQuiz.name;
     return 'IT Security Policy';
   };
@@ -321,7 +320,6 @@ const App: React.FC = () => {
   const getHeaderSubtext = () => {
     if(view === 'report') return 'Submit your report to finalize the process.';
     if(view === 'quiz_running') return 'Test your knowledge on essential security practices.';
-    if(view === 'quiz_finished') return 'Your results for this module have been saved.';
     return 'An interactive quiz to test and improve knowledge on core IT security policies.';
   }
 
@@ -345,7 +343,20 @@ const App: React.FC = () => {
     );
   }
 
-  // Default layout for dashboard, results, and report pages
+  // Special layout for quiz finished screen
+  if (view === 'quiz_finished') {
+    return (
+       <div className="min-h-screen w-full font-sans bg-slate-900 flex items-center justify-center p-4">
+         <main className="w-full max-w-lg">
+           <div className="transition-all duration-500 bg-slate-800/50 border border-slate-700 rounded-2xl shadow-lg shadow-black/20 backdrop-blur-sm">
+             {renderContent()}
+           </div>
+         </main>
+       </div>
+    );
+  }
+
+  // Default layout for dashboard and report pages
   return (
     <div className="min-h-screen w-full font-sans bg-slate-900">
       {view !== 'quiz_hub' && (

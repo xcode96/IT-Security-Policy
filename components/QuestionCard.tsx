@@ -45,6 +45,15 @@ const QuestionCard: React.FC<QuestionCardProps> = ({ question, currentQuestionIn
           </p>
         </div>
         <ProgressBar current={currentQuestionIndex + 1} total={totalQuestions} />
+
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mt-4">
+          <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">#ITSecurityPolicy</span>
+          <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-teal-500/10 text-teal-400 border border-teal-500/20">#DataProtection</span>
+          <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">#SecurityCompliance</span>
+          <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20">#ThinkBeforeYouClick</span>
+          <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">#HumanFirewall</span>
+        </div>
+        
         <h2 className="text-xl md:text-2xl font-bold text-slate-100 leading-tight mt-6">{question.question}</h2>
       </div>
 

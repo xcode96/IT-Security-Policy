@@ -12,20 +12,18 @@ const ResultsCard: React.FC<ResultsCardProps> = ({ onReturnToHub }) => {
   );
 
   return (
-    <div className="text-center p-6 md:p-8 animate-fade-in">
-      <div className="flex justify-center mb-4">
+    <div className="text-center p-6 md:p-12 animate-fade-in">
+      <div className="flex justify-center mb-6">
         <CompleteIcon />
       </div>
       
-      <h2 className="text-3xl font-bold text-slate-100 mb-2">
+      <h2 className="text-3xl font-bold text-slate-100 mb-8">
         Module Complete
       </h2>
 
-      <p className="text-slate-400 text-lg mb-8">Your progress has been saved.</p>
-
       <button
         onClick={onReturnToHub}
-        className="w-full mt-4 px-10 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-lg transition-transform duration-200 transform hover:scale-105 shadow-lg shadow-blue-500/20"
+        className="w-full sm:w-auto px-10 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-lg transition-transform duration-200 transform hover:scale-105 shadow-lg shadow-blue-500/20"
       >
         Return to Dashboard
       </button>
