@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { QUIZZES as INITIAL_QUIZZES } from './constants';
-import { Question, QuizProgress, TrainingReport, Quiz, User } from './types';
+import { Question, QuizProgress, TrainingReport, Quiz, User, AdminUser } from './types';
 import QuestionCard from './components/QuestionCard';
 import ResultsCard from './components/ResultsCard';
 import QuizHub from './components/QuizHub';
@@ -17,11 +17,35 @@ const App: React.FC = () => {
   const [user, setUser] = useState<{ fullName: string, username: string } | null>(null);
   const [quizzes, setQuizzes] = useState<Quiz[]>(INITIAL_QUIZZES);
   const [users, setUsers] = useState<User[]>([]);
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [loggedInAdmin, setLoggedInAdmin] = useState<AdminUser | null>(null);
   const [finalOverallResult, setFinalOverallResult] = useState<boolean | null>(null);
 
+  // Effect for Admin User initialization
+  useEffect(() => {
+    let savedAdmins: AdminUser[] = [];
+    try {
+        const savedAdminsRaw = localStorage.getItem('app_admins');
+        if (savedAdminsRaw) {
+            const parsedData = JSON.parse(savedAdminsRaw);
+            if (Array.isArray(parsedData)) {
+                savedAdmins = parsedData;
+            }
+        }
+    } catch (error) {
+        console.error("Could not parse admins from localStorage.", error);
+    }
+
+    const superAdminExists = savedAdmins.some(u => u.username.toLowerCase() === 'superadmin');
+    if (!superAdminExists) {
+        savedAdmins.push({ username: 'superadmin', password: 'dq.adm', role: 'super' });
+    }
+    
+    localStorage.setItem('app_admins', JSON.stringify(savedAdmins));
+    setAdminUsers(savedAdmins);
+  }, []);
+
   // Effect to load and sanitize user data from localStorage on initial load.
-  // This ensures data integrity and handles cases of corrupted or outdated data from previous sessions.
   useEffect(() => {
     let savedUsers: User[] = [];
     try {
@@ -34,24 +58,21 @@ const App: React.FC = () => {
         }
     } catch (error) {
         console.error("Could not parse users from localStorage. Resetting.", error);
-        localStorage.removeItem('app_users'); // Clear corrupted data
+        localStorage.removeItem('app_users');
     }
 
-    // Sanitize all loaded users to ensure data integrity
     savedUsers = savedUsers.map(u => ({ 
         ...u, 
         username: u.username ? u.username.trim() : '',
         fullName: u.fullName ? u.fullName.trim() : '',
         status: u.status || 'active' 
-    })).filter(u => u.username); // Remove any users that became invalid after trim
+    })).filter(u => u.username);
 
-    // Ensure the default 'Demo' user exists
     const defaultUserExists = savedUsers.some(u => u.username.toLowerCase() === 'demo');
     if (!defaultUserExists) {
         savedUsers.push({ fullName: 'Demo User', username: 'Demo', password: 'Demo', status: 'active' });
     }
     
-    // Clean up old, unused default users if they exist
     savedUsers = savedUsers.filter(u => u.username !== 'sso.user' && u.username !== 'main');
 
     localStorage.setItem('app_users', JSON.stringify(savedUsers));
@@ -72,33 +93,34 @@ const App: React.FC = () => {
 
   const isAdminView = useMemo(() => new URLSearchParams(window.location.search).get('page') === 'admin', []);
 
-  const handleAdminLogin = (password: string) => {
-    if (password === 'dq.adm') {
-      setIsAdminAuthenticated(true);
-      return true;
+  const handleAdminLogin = (username: string, password: string): { success: boolean, message: string } => {
+    const adminFound = adminUsers.find(
+      (admin) => admin.username.toLowerCase() === username.toLowerCase() && admin.password === password
+    );
+    if (adminFound) {
+      setLoggedInAdmin(adminFound);
+      return { success: true, message: '' };
     }
-    return false;
+    return { success: false, message: 'Invalid admin username or password.' };
   };
   
   const handleUserLogin = useCallback((username: string, password: string): { success: boolean, message: string } => {
-    const cleanUsername = username.trim().toLowerCase(); // Sanitize input and make case-insensitive
+    const cleanUsername = username.trim().toLowerCase();
     const userFound = users.find(u => u.username.toLowerCase() === cleanUsername);
     if (userFound) {
       if (userFound.password !== password) {
-        return { success: false, message: 'Invalid Employee ID or password.' };
+        return { success: false, message: 'Invalid Username or password.' };
       }
       if (userFound.status === 'expired') {
         return { success: false, message: 'This account has already completed the training and is inactive. Please contact an administrator for a retake.' };
       }
       setUser({ fullName: userFound.fullName, username: userFound.username });
       setView('quiz_hub');
-      // Reset progress for the new session
       setQuizProgress(initialProgress);
       return { success: true, message: '' };
     }
-    return { success: false, message: 'Invalid Employee ID or password.' };
+    return { success: false, message: 'Invalid Username or password.' };
   }, [users, initialProgress]);
-
 
   const handleStartQuiz = useCallback((quizId: string) => {
     setQuizProgress(prev => ({
@@ -163,8 +185,6 @@ const App: React.FC = () => {
     setView('report');
   }, []);
 
-  // Handles report submission. First, it tries to POST to the API.
-  // If the API call fails, it gracefully falls back to saving the report in localStorage.
   const handleSubmitReport = useCallback(async (reportData: TrainingReport) => {
     const API_BASE = 'https://iso27001-pnrp.onrender.com/api/reports';
     try {
@@ -184,7 +204,6 @@ const App: React.FC = () => {
     
     setFinalOverallResult(reportData.overallResult);
 
-    // Expire user after submission
     if (user) {
         const updatedUsers = users.map(u => 
             u.username.toLowerCase() === user.username.toLowerCase() ? { ...u, status: 'expired' as const } : u
@@ -232,7 +251,7 @@ const App: React.FC = () => {
     };
 
     if (users.some(u => u.username.toLowerCase() === cleanUser.username.toLowerCase())) {
-        alert('Employee ID already exists.');
+        alert('Username already exists.');
         return false;
     }
     
@@ -253,6 +272,27 @@ const App: React.FC = () => {
     localStorage.setItem('app_users', JSON.stringify(updatedUsers));
   };
 
+  const handleAddAdmin = (newAdmin: AdminUser): boolean => {
+    if (adminUsers.some(admin => admin.username.toLowerCase() === newAdmin.username.toLowerCase())) {
+      alert('Admin username already exists.');
+      return false;
+    }
+    const updatedAdmins = [...adminUsers, newAdmin];
+    setAdminUsers(updatedAdmins);
+    localStorage.setItem('app_admins', JSON.stringify(updatedAdmins));
+    return true;
+  };
+
+  const handleDeleteAdmin = (usernameToDelete: string) => {
+    if (usernameToDelete.toLowerCase() === 'superadmin') {
+      alert('The Super Admin account cannot be deleted.');
+      return;
+    }
+    const updatedAdmins = adminUsers.filter(admin => admin.username !== usernameToDelete);
+    setAdminUsers(updatedAdmins);
+    localStorage.setItem('app_admins', JSON.stringify(updatedAdmins));
+  };
+
   const handleImportQuizzes = (newQuizzes: Quiz[]) => {
     if (Array.isArray(newQuizzes) && newQuizzes.every(q => q.id && q.name && Array.isArray(q.questions))) {
         setQuizzes(newQuizzes);
@@ -263,15 +303,19 @@ const App: React.FC = () => {
   };
 
   if (isAdminView) {
-    if (!isAdminAuthenticated) return <AdminLogin onLogin={handleAdminLogin} />;
+    if (!loggedInAdmin) return <AdminLogin onLogin={handleAdminLogin} />;
     return <AdminPanel 
               quizzes={quizzes}
               users={users}
+              adminUsers={adminUsers}
+              admin={loggedInAdmin}
               onAddUser={handleAddUser}
               onDeleteUser={handleDeleteUser}
               onAddQuestion={handleAddQuestion}
               onImportQuizzes={handleImportQuizzes}
               onUpdateRequestStatus={handleUpdateRequestStatus}
+              onAddAdmin={handleAddAdmin}
+              onDeleteAdmin={handleDeleteAdmin}
            />;
   }
 
@@ -330,17 +374,6 @@ const App: React.FC = () => {
     }
   };
   
-  const getHeaderText = () => {
-    if(activeQuiz) return activeQuiz.name;
-    return 'IT Security Policy';
-  };
-  
-  const getHeaderSubtext = () => {
-    if(view === 'quiz_running') return 'Test your knowledge on essential security practices.';
-    return 'An interactive quiz to test and improve knowledge on core IT security policies.';
-  }
-
-  // Special layout for user login
   if (view === 'user_login') {
     return (
        <div className="min-h-screen w-full bg-slate-900 flex items-center justify-center p-4">
@@ -349,7 +382,6 @@ const App: React.FC = () => {
     );
   }
   
-  // Special layout for quiz running (distraction-free mode)
   if (view === 'quiz_running') {
     return (
        <div className="min-h-screen w-full font-sans bg-slate-900 flex items-center justify-center p-4">
@@ -360,7 +392,6 @@ const App: React.FC = () => {
     );
   }
 
-  // Special layout for quiz finished screen
   if (view === 'quiz_finished') {
     return (
        <div className="min-h-screen w-full font-sans bg-slate-900 flex items-center justify-center p-4">
@@ -373,7 +404,6 @@ const App: React.FC = () => {
     );
   }
   
-  // Special layout for report submission and success screen (no header)
   if (view === 'report' || view === 'post_submission') {
     return (
        <div className="min-h-screen w-full font-sans bg-slate-900 flex items-center justify-center p-4">
@@ -386,7 +416,6 @@ const App: React.FC = () => {
     );
   }
 
-  // Default layout for dashboard
   return (
     <div className="min-h-screen w-full font-sans bg-slate-900">
       <main className="w-full max-w-5xl mx-auto px-4 pb-12 pt-12">

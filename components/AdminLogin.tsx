@@ -1,19 +1,20 @@
 import React, { useState } from 'react';
 
 interface AdminLoginProps {
-  onLogin: (password: string) => boolean;
+  onLogin: (username: string, password: string) => { success: boolean; message: string };
 }
 
 const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    const success = onLogin(password);
-    if (!success) {
-      setError('Invalid password. Please try again.');
+    const result = onLogin(username, password);
+    if (!result.success) {
+      setError(result.message);
     }
   };
   
@@ -24,11 +25,23 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
       <div className="w-full max-w-md">
           <header className="text-center mb-8">
               <h1 className="text-4xl md:text-5xl font-extrabold text-slate-100 mb-2 tracking-tight">Admin Access</h1>
-              <p className="text-lg text-slate-400">Please enter the password to continue.</p>
+              <p className="text-lg text-slate-400">Please enter your credentials to continue.</p>
           </header>
           <main>
               <div className="bg-slate-800/50 border border-slate-700 rounded-2xl shadow-lg shadow-black/20 backdrop-blur-sm p-8">
                   <form onSubmit={handleSubmit} className="flex flex-col items-center gap-4">
+                      <div className="w-full text-left">
+                          <label htmlFor="username" className="block text-sm font-medium text-slate-300 mb-2">Username</label>
+                          <input
+                              id="username"
+                              type="text"
+                              value={username}
+                              onChange={(e) => setUsername(e.target.value)}
+                              placeholder="Enter admin username"
+                              className={commonInputClasses}
+                              required
+                          />
+                      </div>
                       <div className="w-full text-left">
                           <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-2">Password</label>
                           <input

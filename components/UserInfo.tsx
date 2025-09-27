@@ -38,8 +38,8 @@ const UserLogin: React.FC<UserLoginProps> = ({ onLogin }) => {
             <h2 className="text-2xl font-bold text-slate-100 mb-6">User Login</h2>
             <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-full">
             <div>
-                <label htmlFor="username" className="block text-sm font-medium text-slate-300 mb-1">Employee ID</label>
-                <input id="username" type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Enter your Employee ID" className={commonInputClasses} required />
+                <label htmlFor="username" className="block text-sm font-medium text-slate-300 mb-1">Username</label>
+                <input id="username" type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Enter your username" className={commonInputClasses} required />
             </div>
 
             <div>

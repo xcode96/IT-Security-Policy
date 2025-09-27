@@ -1,15 +1,26 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
-import { AdminPanelProps, Question, Quiz, User, RetakeRequest } from '../types';
+import { AdminPanelProps, Question, Quiz, User, RetakeRequest, AdminUser, AdminRole } from '../types';
 import AdminDashboard from './AdminDashboard';
 
-type Tab = 'reports' | 'requests' | 'users' | 'questions';
+type Tab = 'reports' | 'requests' | 'users' | 'questions' | 'admins';
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ quizzes, users, onAddUser, onDeleteUser, onAddQuestion, onImportQuizzes, onUpdateRequestStatus }) => {
+const AdminPanel: React.FC<AdminPanelProps> = ({ 
+    quizzes, users, adminUsers, admin,
+    onAddUser, onDeleteUser, onAddQuestion, onImportQuizzes, onUpdateRequestStatus,
+    onAddAdmin, onDeleteAdmin 
+}) => {
     const [activeTab, setActiveTab] = useState<Tab>('reports');
     const fileInputRef = useRef<HTMLInputElement>(null);
+    
+    // State for searches
     const [userSearch, setUserSearch] = useState('');
-    const [retakeRequests, setRetakeRequests] = useState<RetakeRequest[]>([]);
     const [retakeSearch, setRetakeSearch] = useState('');
+    const [adminSearch, setAdminSearch] = useState('');
+    
+    const [retakeRequests, setRetakeRequests] = useState<RetakeRequest[]>([]);
+    
+    const canEdit = admin.role === 'super' || admin.role === 'editor';
+    const isSuperAdmin = admin.role === 'super';
 
     useEffect(() => {
         const savedRequestsRaw = localStorage.getItem('retakeRequests');
@@ -20,22 +31,55 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ quizzes, users, onAddUser, onDe
     }, []);
 
     const [newQuestion, setNewQuestion] = useState({
-        quizId: quizzes[0]?.id || '',
-        question: '',
-        options: ['', '', '', ''],
-        correctAnswer: '',
+        quizId: quizzes[0]?.id || '', question: '', options: ['', '', '', ''], correctAnswer: '',
     });
-
-    const [newUser, setNewUser] = useState({
-        fullName: '',
-        username: '',
-        password: '',
-    });
+    const [newUser, setNewUser] = useState({ fullName: '', username: '', password: '' });
+    const [newAdmin, setNewAdmin] = useState({ username: '', password: '', role: 'viewer' as AdminRole });
 
     const updateRetakeRequests = (updatedRequests: RetakeRequest[]) => {
         setRetakeRequests(updatedRequests);
         localStorage.setItem('retakeRequests', JSON.stringify(updatedRequests));
     };
+
+    // CSV Export Helpers
+    const escapeCsvField = (field: string | null | undefined): string => {
+        if (field === null || field === undefined) return '';
+        const stringField = String(field);
+        if (stringField.includes(',') || stringField.includes('"') || stringField.includes('\n')) {
+            return `"${stringField.replace(/"/g, '""')}"`;
+        }
+        return stringField;
+    };
+
+    const downloadCsv = (headers: string[], data: any[][], filename: string) => {
+        if (data.length === 0) {
+            alert(`There is no data to export in the current view for ${filename}.`);
+            return;
+        }
+        const csvRows = [
+            headers.join(','),
+            ...data.map(row => row.map(escapeCsvField).join(','))
+        ];
+        const csvContent = csvRows.join('\r\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        if (link.download !== undefined) {
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    };
+    
+    const ExportButton: React.FC<{ onClick: () => void, disabled?: boolean }> = ({ onClick, disabled }) => (
+        <button onClick={onClick} disabled={disabled} className="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white font-semibold rounded-lg text-sm transition-colors duration-200 disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed flex-shrink-0 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path d="M10.75 2.75a.75.75 0 00-1.5 0v8.614L6.295 8.235a.75.75 0 10-1.09 1.03l4.25 4.5a.75.75 0 001.09 0l4.25-4.5a.75.75 0 00-1.09-1.03l-2.955 3.129V2.75z" /><path d="M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z" /></svg>
+            Export
+        </button>
+    );
 
     const handleApproveRetake = (username: string) => {
         onUpdateRequestStatus(username, 'active');
@@ -51,71 +95,37 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ quizzes, users, onAddUser, onDe
         }
     };
     
-    const handleNewUserChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setNewUser(prev => ({ ...prev, [name]: value }));
-    };
-
     const handleAddUserSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         const { fullName, username, password } = newUser;
-
-        if (!fullName || !username || !password) {
-            alert('Please fill out all user fields.');
-            return;
-        }
+        if (!fullName || !username || !password) { alert('Please fill out all user fields.'); return; }
         const success = onAddUser({ fullName, username, password });
         if (success) setNewUser({ fullName: '', username: '', password: '' });
     };
     
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        setNewQuestion(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleOptionChange = (index: number, value: string) => {
-        const newOptions = [...newQuestion.options];
-        newOptions[index] = value;
-        setNewQuestion(prev => ({ ...prev, options: newOptions }));
-    };
-
     const handleAddQuestionSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         const { quizId, question, options, correctAnswer } = newQuestion;
-        if (!quizId || !question || options.some(o => !o.trim()) || !correctAnswer) {
-            alert("Please fill out all fields.");
-            return;
-        }
-        
+        if (!quizId || !question || options.some(o => !o.trim()) || !correctAnswer) { alert("Please fill out all fields."); return; }
         const selectedQuiz = quizzes.find(q => q.id === quizId);
-        if (!selectedQuiz) {
-             alert("Selected quiz category not found.");
-             return;
-        }
-
-        const questionToAdd: Omit<Question, 'id'> = {
-            category: selectedQuiz.name,
-            question,
-            options,
-            correctAnswer,
-        };
+        if (!selectedQuiz) { alert("Selected quiz category not found."); return; }
+        const questionToAdd: Omit<Question, 'id'> = { category: selectedQuiz.name, question, options, correctAnswer };
         onAddQuestion(quizId, questionToAdd);
-        
-        setNewQuestion({
-            quizId: quizId,
-            question: '',
-            options: ['', '', '', ''],
-            correctAnswer: '',
-        });
+        setNewQuestion({ quizId: quizId, question: '', options: ['', '', '', ''], correctAnswer: '' });
         alert("Question added successfully!");
+    };
+
+    const handleAddAdminSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newAdmin.username || !newAdmin.password) { alert('Please fill out all admin fields.'); return; }
+        const success = onAddAdmin(newAdmin);
+        if (success) setNewAdmin({ username: '', password: '', role: 'viewer' });
     };
     
     const handleExport = () => {
         const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(quizzes, null, 2))}`;
         const link = document.createElement("a");
-        link.href = jsonString;
-        link.download = "quizzes.json";
-        link.click();
+        link.href = jsonString; link.download = "quizzes.json"; link.click();
     };
 
     const handleImportClick = () => fileInputRef.current?.click();
@@ -128,8 +138,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ quizzes, users, onAddUser, onDe
             try {
                 const text = e.target?.result;
                 if (typeof text !== 'string') throw new Error("File is not valid text.");
-                const importedQuizzes = JSON.parse(text);
-                onImportQuizzes(importedQuizzes);
+                onImportQuizzes(JSON.parse(text));
             } catch (error) {
                 console.error("Failed to import quizzes:", error);
                 alert("Failed to import quizzes. Please check the file format.");
@@ -141,27 +150,27 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ quizzes, users, onAddUser, onDe
     const filteredRetakeRequests = useMemo(() => {
         const searchTerm = retakeSearch.toLowerCase().trim();
         if (!searchTerm) return retakeRequests;
-        return retakeRequests.filter(req =>
-            req.fullName.toLowerCase().includes(searchTerm) ||
-            req.username.toLowerCase().includes(searchTerm)
-        );
+        return retakeRequests.filter(req => req.fullName.toLowerCase().includes(searchTerm) || req.username.toLowerCase().includes(searchTerm));
     }, [retakeRequests, retakeSearch]);
 
     const filteredUsers = useMemo(() => {
         const searchTerm = userSearch.toLowerCase().trim();
         if (!searchTerm) return users;
-        return users.filter(user =>
-            user.fullName.toLowerCase().includes(searchTerm) ||
-            user.username.toLowerCase().includes(searchTerm)
-        );
+        return users.filter(user => user.fullName.toLowerCase().includes(searchTerm) || user.username.toLowerCase().includes(searchTerm));
     }, [users, userSearch]);
+    
+    const filteredAdmins = useMemo(() => {
+        const searchTerm = adminSearch.toLowerCase().trim();
+        if (!searchTerm) return adminUsers;
+        return adminUsers.filter(admin => admin.username.toLowerCase().includes(searchTerm));
+    }, [adminUsers, adminSearch]);
 
-    const commonInputClasses = "w-full p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors";
-    const NavLink = ({ tab, icon, children }: {tab: Tab, icon: React.ReactNode, children: React.ReactNode}) => (
-        <button onClick={() => setActiveTab(tab)} className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${activeTab === tab ? 'bg-blue-500/10 text-blue-300' : 'text-slate-400 hover:bg-slate-700 hover:text-slate-200'}`}>
+    const commonInputClasses = "w-full p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors disabled:bg-slate-800 disabled:cursor-not-allowed";
+    const NavLink = ({ tab, icon, children, visible = true }: {tab: Tab, icon: React.ReactNode, children: React.ReactNode, visible?: boolean }) => (
+        visible ? <button onClick={() => setActiveTab(tab)} className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${activeTab === tab ? 'bg-blue-500/10 text-blue-300' : 'text-slate-400 hover:bg-slate-700 hover:text-slate-200'}`}>
             {icon}
             <span>{children}</span>
-        </button>
+        </button> : null
     );
 
     const getHeader = () => {
@@ -170,12 +179,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ quizzes, users, onAddUser, onDe
             case 'requests': return { title: 'Retake Requests', subtitle: 'Approve or deny user requests to retake the exam.' };
             case 'users': return { title: 'User Management', subtitle: 'Add or remove user accounts.' };
             case 'questions': return { title: 'Question Management', subtitle: 'Manage quiz content and data workflow.' };
+            case 'admins': return { title: 'Admin Management', subtitle: 'Create and manage administrator accounts.' };
         }
     }
 
     return (
         <div className="flex min-h-screen w-full font-sans bg-slate-900 text-slate-200">
-            {/* Sidebar */}
             <aside className="w-64 flex-shrink-0 bg-slate-800/50 p-4 border-r border-slate-700 flex flex-col">
                 <div className="flex items-center gap-3 px-2 mb-8">
                     <div className="w-8 h-8 bg-blue-500/10 text-blue-400 flex items-center justify-center rounded-lg border border-blue-500/20">
@@ -199,10 +208,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ quizzes, users, onAddUser, onDe
                     <NavLink tab="questions" icon={<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M15.28 4.72a.75.75 0 010 1.06l-6.5 6.5a.75.75 0 01-1.06 0l-3.5-3.5a.75.75 0 111.06-1.06L8.5 10.69l6.02-6.03a.75.75 0 011.06 0zm-7.03 8.22a.75.75 0 100-1.5.75.75 0 000 1.5zM12.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM15.28 9.72a.75.75 0 010 1.06l-3 3a.75.75 0 11-1.06-1.06l3-3a.75.75 0 011.06 0z" clipRule="evenodd" /></svg>}>
                         Question Management
                     </NavLink>
+                    <NavLink tab="admins" icon={<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-5.5-2.5a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0zM10 12a5.99 5.99 0 00-4.793 2.39A6.483 6.483 0 0010 16.5a6.483 6.483 0 004.793-2.11A5.99 5.99 0 0010 12z" clipRule="evenodd" /></svg>} visible={isSuperAdmin}>
+                        Admin Management
+                    </NavLink>
                 </nav>
             </aside>
             
-            {/* Main Content */}
             <main className="flex-1 p-6 md:p-10 overflow-y-auto">
                 <header className="mb-8">
                     <h2 className="text-3xl font-bold text-slate-100">{getHeader().title}</h2>
@@ -215,179 +226,26 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ quizzes, users, onAddUser, onDe
                     {activeTab === 'requests' && (
                         <div className="animate-fade-in">
                             {retakeRequests.length === 0 ? (
-                                <div className="text-center py-12">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-12 w-12 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25s-9-3.694-9-8.25c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" /></svg>
-                                    <h3 className="mt-2 text-lg font-medium text-slate-200">No Pending Requests</h3>
-                                    <p className="mt-1 text-sm text-slate-400">When a user fails and requests a retake, it will appear here.</p>
-                                </div>
+                                <div className="text-center py-12"><svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-12 w-12 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25s-9-3.694-9-8.25c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" /></svg><h3 className="mt-2 text-lg font-medium text-slate-200">No Pending Requests</h3><p className="mt-1 text-sm text-slate-400">When a user fails and requests a retake, it will appear here.</p></div>
                             ) : (
-                                <>
-                                    <div className="mb-4">
-                                        <input
-                                            type="text"
-                                            placeholder="Search requests by name or ID..."
-                                            value={retakeSearch}
-                                            onChange={(e) => setRetakeSearch(e.target.value)}
-                                            className={commonInputClasses}
-                                        />
-                                    </div>
-                                    <div className="space-y-4 max-h-[32rem] overflow-y-auto pr-2">
-                                        {filteredRetakeRequests.length === 0 ? (
-                                            <p className="text-slate-400 text-center py-4">No requests match your search.</p>
-                                        ) : (
-                                            filteredRetakeRequests.map(req => (
-                                                <div key={req.username} className="bg-slate-800 p-4 rounded-lg border border-slate-700 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-                                                    <div>
-                                                        <p className="font-semibold text-slate-200">{req.fullName}</p>
-                                                        <p className="text-sm text-slate-400 font-mono">ID: {req.username}</p>
-                                                        <p className="text-xs text-slate-500 mt-1">Requested: {new Date(req.requestDate).toLocaleString()}</p>
-                                                    </div>
-                                                    <div className="flex items-center gap-3 w-full sm:w-auto">
-                                                        <button 
-                                                            onClick={() => handleDenyRetake(req.username)} 
-                                                            className="flex-1 sm:flex-none px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 font-semibold rounded-lg text-sm transition-colors">
-                                                            Deny
-                                                        </button>
-                                                        <button 
-                                                            onClick={() => handleApproveRetake(req.username)} 
-                                                            className="flex-1 sm:flex-none px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg text-sm transition-colors">
-                                                            Approve
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))
-                                        )}
-                                    </div>
-                                </>
+                                <><div className="mb-4 flex items-center gap-4">
+                                  <input type="text" placeholder="Search requests by name or username..." value={retakeSearch} onChange={(e) => setRetakeSearch(e.target.value)} className={commonInputClasses} />
+                                  <ExportButton onClick={() => downloadCsv(['Full Name', 'Username', 'Request Date'], filteredRetakeRequests.map(r => [r.fullName, r.username, r.requestDate]), 'retake_requests')} disabled={filteredRetakeRequests.length === 0} />
+                                </div><div className="space-y-4 max-h-[32rem] overflow-y-auto pr-2">{filteredRetakeRequests.length === 0 ? <p className="text-slate-400 text-center py-4">No requests match your search.</p> : filteredRetakeRequests.map(req => (<div key={req.username} className="bg-slate-800 p-4 rounded-lg border border-slate-700 flex flex-col sm:flex-row justify-between sm:items-center gap-4"><div><p className="font-semibold text-slate-200">{req.fullName}</p><p className="text-sm text-slate-400 font-mono">Username: {req.username}</p><p className="text-xs text-slate-500 mt-1">Requested: {new Date(req.requestDate).toLocaleString()}</p></div><div className="flex items-center gap-3 w-full sm:w-auto"><button onClick={() => handleDenyRetake(req.username)} disabled={!canEdit} className="flex-1 sm:flex-none px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 font-semibold rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Deny</button><button onClick={() => handleApproveRetake(req.username)} disabled={!canEdit} className="flex-1 sm:flex-none px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Approve</button></div></div>))}</div></>
                             )}
                         </div>
                     )}
                     
                     {activeTab === 'users' && (
-                        <div className="animate-fade-in">
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                <div className="bg-slate-900/40 p-6 rounded-xl border border-slate-700">
-                                    <h3 className="text-xl font-bold mb-4 border-b border-slate-700 pb-3 text-slate-100">Add New User</h3>
-                                    <form onSubmit={handleAddUserSubmit} className="space-y-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-300 mb-1">Full Name</label>
-                                            <input type="text" name="fullName" value={newUser.fullName} onChange={handleNewUserChange} className={commonInputClasses} placeholder="e.g., Jane Doe" required/>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-300 mb-1">Employee ID</label>
-                                            <input type="text" name="username" value={newUser.username} onChange={handleNewUserChange} className={commonInputClasses} placeholder="e.g., jdoe99" required/>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-300 mb-1">Password</label>
-                                            <input type="password" name="password" value={newUser.password} onChange={handleNewUserChange} className={commonInputClasses} placeholder="Set a temporary password" required/>
-                                        </div>
-                                        <button type="submit" className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors">Add User</button>
-                                    </form>
-                                </div>
-                                <div>
-                                    <h3 className="text-xl font-bold mb-4 border-b border-slate-700 pb-3 text-slate-100">Existing Users ({filteredUsers.length})</h3>
-                                    <div className="mb-4">
-                                        <input
-                                            type="text"
-                                            placeholder="Search by name or ID..."
-                                            value={userSearch}
-                                            onChange={(e) => setUserSearch(e.target.value)}
-                                            className={commonInputClasses}
-                                        />
-                                    </div>
-                                    <div className="space-y-3 max-h-[26rem] overflow-y-auto pr-2">
-                                        {users.length === 0 ? (
-                                            <p className="text-slate-400 text-center py-4">No users have been added.</p>
-                                        ) : filteredUsers.length === 0 ? (
-                                            <p className="text-slate-400 text-center py-4">No users match your search.</p>
-                                        ) : (
-                                            filteredUsers.map(user => (
-                                                <div key={user.username} className="bg-slate-800 p-3 rounded-lg border border-slate-700 flex justify-between items-center">
-                                                    <div>
-                                                        <p className="font-semibold text-slate-200">{user.fullName}</p>
-                                                        <p className="text-sm text-slate-400 font-mono">ID: {user.username}</p>
-                                                        <p className={`text-xs font-bold mt-1 px-2 py-0.5 rounded-full inline-block ${user.status === 'active' ? 'bg-green-500/10 text-green-400' : 'bg-slate-700 text-slate-400'}`}>
-                                                            {user.status}
-                                                        </p>
-                                                    </div>
-                                                    {user.username.toLowerCase() !== 'demo' && (
-                                                        <button
-                                                            onClick={() => {
-                                                                if (window.confirm(`Are you sure you want to delete the user "${user.username}"?`)) {
-                                                                    onDeleteUser(user.username);
-                                                                }
-                                                            }}
-                                                            className="p-2 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors"
-                                                            aria-label={`Delete user ${user.username}`}
-                                                        >
-                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.124-2.033-2.124H8.033c-1.12 0-2.033.944-2.033 2.124v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            ))
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <div className="animate-fade-in"><div className="grid grid-cols-1 lg:grid-cols-2 gap-8"><div className="bg-slate-900/40 p-6 rounded-xl border border-slate-700"><h3 className="text-xl font-bold mb-4 border-b border-slate-700 pb-3 text-slate-100">Add New User</h3><form onSubmit={handleAddUserSubmit} className="space-y-4"><div><label className="block text-sm font-medium text-slate-300 mb-1">Full Name</label><input type="text" name="fullName" value={newUser.fullName} onChange={(e) => setNewUser(p => ({...p, fullName: e.target.value}))} className={commonInputClasses} placeholder="e.g., Jane Doe" required disabled={!canEdit}/></div><div><label className="block text-sm font-medium text-slate-300 mb-1">Username</label><input type="text" name="username" value={newUser.username} onChange={(e) => setNewUser(p => ({...p, username: e.target.value}))} className={commonInputClasses} placeholder="e.g., jdoe99" required disabled={!canEdit}/></div><div><label className="block text-sm font-medium text-slate-300 mb-1">Password</label><input type="password" name="password" value={newUser.password} onChange={(e) => setNewUser(p => ({...p, password: e.target.value}))} className={commonInputClasses} placeholder="Set a temporary password" required disabled={!canEdit}/></div><button type="submit" disabled={!canEdit} className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors disabled:bg-slate-600 disabled:cursor-not-allowed">Add User</button></form></div><div><div className="flex justify-between items-center mb-4 border-b border-slate-700 pb-3"><h3 className="text-xl font-bold text-slate-100">Existing Users ({filteredUsers.length})</h3><ExportButton onClick={() => downloadCsv(['Full Name', 'Username', 'Status'], filteredUsers.map(u => [u.fullName, u.username, u.status]), 'user_management')} disabled={filteredUsers.length === 0} /></div><div className="mb-4"><input type="text" placeholder="Search by name or username..." value={userSearch} onChange={(e) => setUserSearch(e.target.value)} className={commonInputClasses} /></div><div className="space-y-3 max-h-[26rem] overflow-y-auto pr-2">{users.length === 0 ? <p className="text-slate-400 text-center py-4">No users have been added.</p> : filteredUsers.length === 0 ? <p className="text-slate-400 text-center py-4">No users match your search.</p> : filteredUsers.map(user => (<div key={user.username} className="bg-slate-800 p-3 rounded-lg border border-slate-700 flex justify-between items-center"><div><p className="font-semibold text-slate-200">{user.fullName}</p><p className="text-sm text-slate-400 font-mono">Username: {user.username}</p><p className={`text-xs font-bold mt-1 px-2 py-0.5 rounded-full inline-block ${user.status === 'active' ? 'bg-green-500/10 text-green-400' : 'bg-slate-700 text-slate-400'}`}>{user.status}</p></div>{user.username.toLowerCase() !== 'demo' && canEdit && (<button onClick={() => { if (window.confirm(`Are you sure you want to delete the user "${user.username}"?`)) { onDeleteUser(user.username); } }} className="p-2 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors" aria-label={`Delete user ${user.username}`}><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.124-2.033-2.124H8.033c-1.12 0-2.033.944-2.033 2.124v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg></button>)}</div>))}</div></div></div></div>
                     )}
 
                     {activeTab === 'questions' && (
-                        <div className="animate-fade-in">
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                               <div className="bg-slate-900/40 p-6 rounded-xl border border-slate-700">
-                                    <h3 className="text-xl font-bold mb-4 border-b border-slate-700 pb-3 text-slate-100">Add New Question</h3>
-                                    <form onSubmit={handleAddQuestionSubmit} className="space-y-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-300 mb-1">Category</label>
-                                            <select name="quizId" value={newQuestion.quizId} onChange={handleInputChange} className={commonInputClasses}>
-                                                {quizzes.map(quiz => <option key={quiz.id} value={quiz.id}>{quiz.name}</option>)}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-300 mb-1">Question Text</label>
-                                            <textarea name="question" value={newQuestion.question} onChange={handleInputChange} rows={3} className={commonInputClasses} required/>
-                                        </div>
-                                        {newQuestion.options.map((option, index) => (
-                                            <div key={index}>
-                                                <label className="block text-sm font-medium text-slate-300 mb-1">Option {index + 1}</label>
-                                                <input type="text" value={option} onChange={(e) => handleOptionChange(index, e.target.value)} className={commonInputClasses} required/>
-                                            </div>
-                                        ))}
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-300 mb-1">Correct Answer</label>
-                                            <select name="correctAnswer" value={newQuestion.correctAnswer} onChange={handleInputChange} className={commonInputClasses} required>
-                                                <option value="">Select the correct answer</option>
-                                                {newQuestion.options.filter(o => o.trim()).map(option => <option key={option} value={option}>{option}</option>)}
-                                            </select>
-                                        </div>
-                                        <button type="submit" className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors">Add Question</button>
-                                    </form>
-                                </div>
-                                
-                                <div className="space-y-8">
-                                     <div className="bg-slate-900/40 p-6 rounded-xl border border-slate-700">
-                                         <h3 className="text-xl font-bold mb-4 border-b border-slate-700 pb-3 text-slate-100">Data Management</h3>
-                                         <div className="space-y-4">
-                                            <div className="flex items-center gap-4">
-                                                <button onClick={handleExport} className="flex-1 px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-lg">Export to JSON</button>
-                                                <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".json" className="hidden" />
-                                                <button onClick={handleImportClick} className="flex-1 px-6 py-3 bg-slate-600 hover:bg-slate-500 text-white font-semibold rounded-lg">Import from JSON</button>
-                                            </div>
-                                         </div>
-                                     </div>
-                                      <div className="p-4 bg-blue-500/10 border border-blue-500/20 text-blue-300 rounded-lg">
-                                        <h3 className="font-bold text-lg mb-1 text-blue-200">How to Update the Live Quiz</h3>
-                                        <p className="text-sm">
-                                            This panel is for preparing quiz updates. To make changes permanent for all users, you must:
-                                            <br/> 1. <strong>Export to JSON</strong> after adding your new questions.
-                                            <br/> 2. Replace the content of the <strong>`constants.ts`</strong> file with data from the exported file.
-                                            <br/> 3. <strong>Deploy the updated code</strong> to the live server.
-                                        </p>
-                                      </div>
-                                </div>
-                            </div>
-                        </div>
+                        <div className="animate-fade-in"><div className="grid grid-cols-1 lg:grid-cols-2 gap-8"><div className="bg-slate-900/40 p-6 rounded-xl border border-slate-700"><h3 className="text-xl font-bold mb-4 border-b border-slate-700 pb-3 text-slate-100">Add New Question</h3><form onSubmit={handleAddQuestionSubmit} className="space-y-4"><div><label className="block text-sm font-medium text-slate-300 mb-1">Category</label><select name="quizId" value={newQuestion.quizId} onChange={(e) => setNewQuestion(p => ({ ...p, quizId: e.target.value }))} className={commonInputClasses} disabled={!canEdit}>{quizzes.map(quiz => <option key={quiz.id} value={quiz.id}>{quiz.name}</option>)}</select></div><div><label className="block text-sm font-medium text-slate-300 mb-1">Question Text</label><textarea name="question" value={newQuestion.question} onChange={(e) => setNewQuestion(p => ({ ...p, question: e.target.value }))} rows={3} className={commonInputClasses} required disabled={!canEdit}/></div>{newQuestion.options.map((option, index) => (<div key={index}><label className="block text-sm font-medium text-slate-300 mb-1">Option {index + 1}</label><input type="text" value={option} onChange={(e) => { const newOptions = [...newQuestion.options]; newOptions[index] = e.target.value; setNewQuestion(p => ({...p, options: newOptions})); }} className={commonInputClasses} required disabled={!canEdit}/></div>))}<div><label className="block text-sm font-medium text-slate-300 mb-1">Correct Answer</label><select name="correctAnswer" value={newQuestion.correctAnswer} onChange={(e) => setNewQuestion(p => ({ ...p, correctAnswer: e.target.value }))} className={commonInputClasses} required disabled={!canEdit}><option value="">Select the correct answer</option>{newQuestion.options.filter(o => o.trim()).map(option => <option key={option} value={option}>{option}</option>)}</select></div><button type="submit" className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors disabled:bg-slate-600 disabled:cursor-not-allowed" disabled={!canEdit}>Add Question</button></form></div><div className="space-y-8"><div className="bg-slate-900/40 p-6 rounded-xl border border-slate-700"><h3 className="text-xl font-bold mb-4 border-b border-slate-700 pb-3 text-slate-100">Data Management</h3><div className="space-y-4"><div className="flex items-center gap-4"><button onClick={handleExport} className="flex-1 px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-lg">Export to JSON</button><input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".json" className="hidden" /><button onClick={handleImportClick} disabled={!canEdit} className="flex-1 px-6 py-3 bg-slate-600 hover:bg-slate-500 text-white font-semibold rounded-lg disabled:bg-slate-700 disabled:cursor-not-allowed">Import from JSON</button></div></div></div><div className="p-4 bg-blue-500/10 border border-blue-500/20 text-blue-300 rounded-lg"><h3 className="font-bold text-lg mb-1 text-blue-200">How to Update the Live Quiz</h3><p className="text-sm">This panel is for preparing quiz updates. To make changes permanent for all users, you must:<br/> 1. <strong>Export to JSON</strong> after adding your new questions.<br/> 2. Replace the content of the <strong>`constants.ts`</strong> file with data from the exported file.<br/> 3. <strong>Deploy the updated code</strong> to the live server.</p></div></div></div></div>
+                    )}
+
+                    {activeTab === 'admins' && isSuperAdmin && (
+                        <div className="animate-fade-in"><div className="grid grid-cols-1 lg:grid-cols-2 gap-8"><div className="bg-slate-900/40 p-6 rounded-xl border border-slate-700"><h3 className="text-xl font-bold mb-4 border-b border-slate-700 pb-3 text-slate-100">Add New Admin</h3><form onSubmit={handleAddAdminSubmit} className="space-y-4"><div><label className="block text-sm font-medium text-slate-300 mb-1">Username</label><input type="text" value={newAdmin.username} onChange={(e) => setNewAdmin(p=>({...p, username: e.target.value}))} className={commonInputClasses} required /></div><div><label className="block text-sm font-medium text-slate-300 mb-1">Password</label><input type="password" value={newAdmin.password} onChange={(e) => setNewAdmin(p=>({...p, password: e.target.value}))} className={commonInputClasses} required /></div><div><label className="block text-sm font-medium text-slate-300 mb-1">Role</label><select value={newAdmin.role} onChange={(e) => setNewAdmin(p=>({...p, role: e.target.value as AdminRole}))} className={commonInputClasses}><option value="viewer">Viewer (Read-only)</option><option value="editor">Editor</option></select></div><button type="submit" className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors">Add Admin</button></form></div><div><div className="flex justify-between items-center mb-4 border-b border-slate-700 pb-3"><h3 className="text-xl font-bold text-slate-100">Existing Admins ({filteredAdmins.length})</h3><ExportButton onClick={() => downloadCsv(['Username', 'Role'], filteredAdmins.map(a => [a.username, a.role]), 'admin_management')} disabled={filteredAdmins.length === 0} /></div><div className="mb-4"><input type="text" placeholder="Search by username..." value={adminSearch} onChange={(e) => setAdminSearch(e.target.value)} className={commonInputClasses} /></div><div className="space-y-3 max-h-[26rem] overflow-y-auto pr-2">{adminUsers.map(adm => (<div key={adm.username} className="bg-slate-800 p-3 rounded-lg border border-slate-700 flex justify-between items-center"><div><p className="font-semibold text-slate-200">{adm.username}</p><p className={`text-xs font-bold mt-1 px-2 py-0.5 rounded-full inline-block ${adm.role === 'super' ? 'bg-amber-500/10 text-amber-400' : adm.role === 'editor' ? 'bg-blue-500/10 text-blue-400' : 'bg-slate-700 text-slate-400'}`}>{adm.role}</p></div>{adm.role !== 'super' && (<button onClick={() => {if (window.confirm(`Are you sure you want to delete the admin "${adm.username}"?`)) { onDeleteAdmin(adm.username); }}} className="p-2 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors" aria-label={`Delete admin ${adm.username}`}><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.124-2.033-2.124H8.033c-1.12 0-2.033.944-2.033 2.124v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg></button>)}</div>))}</div></div></div></div>
                     )}
                 </div>
             </main>

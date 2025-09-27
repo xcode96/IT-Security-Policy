@@ -76,7 +76,7 @@ const AdminDashboard: React.FC = () => {
             return;
         }
 
-        const headers = ['User Name', 'Employee ID', 'Status'];
+        const headers = ['User Name', 'Username', 'Status'];
 
         // Function to escape CSV fields if they contain commas, quotes, or newlines
         const escapeCsvField = (field: string | null | undefined): string => {
@@ -137,7 +137,7 @@ const AdminDashboard: React.FC = () => {
         
         let reportString = `Subject: Training Report — ${report.user.fullName} — ${date}\n\n`;
         reportString += `Administrator,\n\n`;
-        reportString += `Please find the training results for ${report.user.fullName} (Employee ID: ${report.user.username}) on ${date}:\n\n`;
+        reportString += `Please find the training results for ${report.user.fullName} (Username: ${report.user.username}) on ${date}:\n\n`;
         reportString += `Overall result: ${report.overallResult ? 'Pass' : 'Fail'}\n\n`;
         reportString += `--- DETAILED BREAKDOWN ---\n\n`;
 
@@ -252,7 +252,7 @@ const AdminDashboard: React.FC = () => {
                 <div className="flex items-center gap-4 w-full md:w-auto">
                     <input
                         type="text"
-                        placeholder="Search by name or ID..."
+                        placeholder="Search by name or username..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full md:w-64 p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
@@ -284,7 +284,7 @@ const AdminDashboard: React.FC = () => {
                         <div key={report.id} className="bg-slate-800 rounded-xl border border-slate-700 transition-shadow hover:shadow-sm overflow-hidden">
                             <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between">
                                 <div className="mb-3 sm:mb-0">
-                                    <h3 className="font-bold text-slate-200 text-lg">{report.user.fullName} <span className="text-slate-400 font-normal">(ID: {report.user.username})</span></h3>
+                                    <h3 className="font-bold text-slate-200 text-lg">{report.user.fullName} <span className="text-slate-400 font-normal">(Username: {report.user.username})</span></h3>
                                     <p className="text-slate-400 text-sm">Submitted on: {new Date(report.submissionDate).toLocaleString()}</p>
                                 </div>
                                 <div className="flex items-center gap-2 w-full sm:w-auto flex-shrink-0">
