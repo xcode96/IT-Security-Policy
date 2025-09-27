@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { TrainingReport } from '../types';
 import { QUIZZES } from '../constants';
+import Certificate from './Certificate';
 
 const PASSING_PERCENTAGE = 70;
 
@@ -8,6 +9,7 @@ const AdminDashboard: React.FC = () => {
     const [reports, setReports] = useState<TrainingReport[]>([]);
     const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
     const [copiedReportId, setCopiedReportId] = useState<string | null>(null);
+    const [viewingCertificateFor, setViewingCertificateFor] = useState<TrainingReport | null>(null);
 
     const API_BASE = 'https://iso27001-pnrp.onrender.com/api/reports';
 
@@ -93,22 +95,22 @@ const AdminDashboard: React.FC = () => {
       }, [report]);
 
       return (
-        <div className="mt-4 p-4 border-t border-slate-200 bg-slate-50 rounded-b-xl">
-            <h3 className="text-lg font-bold mb-2 text-slate-900">Detailed Results</h3>
+        <div className="mt-4 p-4 border-t border-slate-700 bg-slate-900/30 rounded-b-xl">
+            <h3 className="text-lg font-bold mb-3 text-slate-100">Detailed Results</h3>
             <div className="space-y-3">
                 {reportData.map(result => (
-                    <div key={result.name} className="border border-slate-200 rounded-lg p-3 bg-white">
+                    <div key={result.name} className="border border-slate-700 rounded-lg p-3 bg-slate-800">
                         <div className="flex justify-between items-start">
                             <div>
-                                <h4 className="font-bold text-slate-800">{result.name}</h4>
-                                <p className="text-sm text-slate-500">Score: {result.score} / {result.total} ({result.percentage}%)</p>
+                                <h4 className="font-bold text-slate-200">{result.name}</h4>
+                                <p className="text-sm text-slate-400">Score: {result.score} / {result.total} ({result.percentage}%)</p>
                             </div>
-                            <p className={`font-bold text-sm ${result.passed ? 'text-green-600' : 'text-red-600'}`}>{result.passed ? 'Pass' : 'Fail'}</p>
+                            <p className={`font-bold text-sm ${result.passed ? 'text-green-400' : 'text-red-400'}`}>{result.passed ? 'Pass' : 'Fail'}</p>
                         </div>
                         {result.weaknesses.length > 0 && (
-                            <div className="mt-2 pt-2 border-t border-slate-200">
-                                <p className="text-xs font-semibold text-slate-600">Areas of weakness:</p>
-                                <ul className="list-disc list-inside text-xs text-red-600 mt-1 space-y-1">
+                            <div className="mt-2 pt-2 border-t border-slate-700">
+                                <p className="text-xs font-semibold text-slate-400">Areas of weakness:</p>
+                                <ul className="list-disc list-inside text-xs text-red-400 mt-1 space-y-1">
                                     {result.weaknesses.map((item, index) => <li key={index}>{item}</li>)}
                                 </ul>
                             </div>
@@ -121,43 +123,58 @@ const AdminDashboard: React.FC = () => {
     };
 
     return (
-        <div>
-            <div className="flex justify-between items-center mb-6 border-b border-slate-200 pb-4">
-                <h2 className="text-2xl font-bold text-slate-900">Submitted Reports ({reports.length})</h2>
-                <button onClick={handleClearReports} disabled={reports.length === 0} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-sm transition-colors duration-200 disabled:bg-slate-400 disabled:cursor-not-allowed">
+        <div className="animate-fade-in">
+            <div className="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
+                <h3 className="text-xl font-bold text-slate-100">All Reports ({reports.length})</h3>
+                <button onClick={handleClearReports} disabled={reports.length === 0} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-sm transition-colors duration-200 disabled:bg-slate-600 disabled:cursor-not-allowed">
                     Clear All Reports
                 </button>
             </div>
             {reports.length === 0 ? (
                 <div className="text-center py-12">
-                    <svg className="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                    <h3 className="mt-2 text-lg font-medium text-slate-900">No reports submitted</h3>
-                    <p className="mt-1 text-sm text-slate-500">As users complete their training, reports will appear here.</p>
+                    <svg className="mx-auto h-12 w-12 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    <h3 className="mt-2 text-lg font-medium text-slate-200">No reports submitted</h3>
+                    <p className="mt-1 text-sm text-slate-400">As users complete their training, reports will appear here.</p>
                 </div>
             ) : (
                 <div className="space-y-4">
                     {reports.map(report => (
-                        <div key={report.id} className="bg-white rounded-xl border border-slate-200 transition-shadow hover:shadow-sm overflow-hidden">
+                        <div key={report.id} className="bg-slate-800 rounded-xl border border-slate-700 transition-shadow hover:shadow-sm overflow-hidden">
                             <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between">
                                 <div className="mb-3 sm:mb-0">
-                                    <h3 className="font-bold text-slate-800 text-lg">{report.user.fullName} <span className="text-slate-500 font-normal">(ID: {report.user.username})</span></h3>
-                                    <p className="text-slate-500 text-sm">Submitted on: {new Date(report.submissionDate).toLocaleString()}</p>
+                                    <h3 className="font-bold text-slate-200 text-lg">{report.user.fullName} <span className="text-slate-400 font-normal">(ID: {report.user.username})</span></h3>
+                                    <p className="text-slate-400 text-sm">Submitted on: {new Date(report.submissionDate).toLocaleString()}</p>
                                 </div>
                                 <div className="flex items-center gap-2 w-full sm:w-auto flex-shrink-0">
-                                    <span className={`px-3 py-1 text-xs font-bold leading-none rounded-full w-20 text-center ${report.overallResult ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                    <span className={`px-3 py-1 text-xs font-bold leading-none rounded-full w-20 text-center ${report.overallResult ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
                                         {report.overallResult ? 'Pass' : 'Fail'}
                                     </span>
-                                    <button onClick={() => handleShareReport(report)} className={`px-4 py-2 font-semibold rounded-lg text-sm transition-all duration-200 shadow-sm w-full sm:w-auto border ${copiedReportId === report.id ? 'bg-green-100 text-green-700 border-green-200' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'}`}>
-                                        {copiedReportId === report.id ? 'Copied!' : 'Share Report'}
+                                     <button onClick={() => setViewingCertificateFor(report)} className="px-4 py-2 font-semibold rounded-lg text-sm transition-all duration-200 shadow-sm w-full sm:w-auto border bg-slate-700 hover:bg-slate-600 text-slate-300 border-slate-600">
+                                        Certificate
+                                    </button>
+                                    <button onClick={() => handleShareReport(report)} className={`px-4 py-2 font-semibold rounded-lg text-sm transition-all duration-200 shadow-sm w-full sm:w-auto border ${copiedReportId === report.id ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-slate-700 hover:bg-slate-600 text-slate-300 border-slate-600'}`}>
+                                        {copiedReportId === report.id ? 'Copied!' : 'Share'}
                                     </button>
                                     <button onClick={() => setSelectedReportId(selectedReportId === report.id ? null : report.id)} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-sm transition-transform duration-200 transform hover:scale-105 shadow-sm shadow-blue-500/10 w-full sm:w-auto">
-                                        {selectedReportId === report.id ? 'Hide Details' : 'View Details'}
+                                        {selectedReportId === report.id ? 'Hide' : 'Details'}
                                     </button>
                                 </div>
                             </div>
                             {selectedReportId === report.id && selectedReport && <ReportDetailView report={selectedReport} />}
                         </div>
                     ))}
+                </div>
+            )}
+            
+            {viewingCertificateFor && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in" onClick={() => setViewingCertificateFor(null)}>
+                    <div className="w-full max-w-4xl" onClick={(e) => e.stopPropagation()}>
+                       <Certificate
+                            user={viewingCertificateFor.user}
+                            completionDate={new Date(viewingCertificateFor.submissionDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                            onClose={() => setViewingCertificateFor(null)}
+                        />
+                    </div>
                 </div>
             )}
         </div>

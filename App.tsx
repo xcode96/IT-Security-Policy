@@ -9,7 +9,29 @@ import ReportCard from './components/ReportCard';
 import AdminLogin from './components/AdminLogin';
 import AdminPanel from './components/AdminPanel';
 
-type View = 'user_login' | 'quiz_hub' | 'quiz_running' | 'quiz_finished' | 'report';
+type View = 'user_login' | 'quiz_hub' | 'quiz_running' | 'quiz_finished' | 'report' | 'submission_successful';
+
+const SubmissionSuccess: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            onLogout();
+        }, 3000); // Auto-logout after 3 seconds
+        return () => clearTimeout(timer);
+    }, [onLogout]);
+
+    return (
+        <div className="p-6 md:p-12 animate-fade-in text-center">
+             <div className="flex justify-center mb-6">
+                <svg className="w-16 h-16 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <h2 className="text-3xl font-bold text-slate-100 mb-2">Submission Successful</h2>
+            <p className="text-slate-400">Your report has been sent to the administrator. You will be logged out shortly.</p>
+        </div>
+    );
+};
+
 
 const App: React.FC = () => {
   const [view, setView] = useState<View>('user_login');
@@ -186,6 +208,7 @@ const App: React.FC = () => {
         setUsers(updatedUsers);
         localStorage.setItem('app_users', JSON.stringify(updatedUsers));
     }
+    setView('submission_successful');
   }, [user, users]);
 
   const handleRestartTraining = useCallback(() => {
@@ -303,22 +326,21 @@ const App: React.FC = () => {
             quizProgress={quizProgress}
             quizzes={quizzes}
             onSubmitReport={handleSubmitReport}
-            onRestart={handleRestartTraining}
           />
         );
+      case 'submission_successful':
+        return <SubmissionSuccess onLogout={handleRestartTraining} />;
       default:
         return null;
     }
   };
   
   const getHeaderText = () => {
-    if(view === 'report') return 'Completion Report';
     if(activeQuiz) return activeQuiz.name;
     return 'IT Security Policy';
   };
   
   const getHeaderSubtext = () => {
-    if(view === 'report') return 'Submit your report to finalize the process.';
     if(view === 'quiz_running') return 'Test your knowledge on essential security practices.';
     return 'An interactive quiz to test and improve knowledge on core IT security policies.';
   }
@@ -355,21 +377,24 @@ const App: React.FC = () => {
        </div>
     );
   }
+  
+  // Special layout for report submission and success screen (no header)
+  if (view === 'report' || view === 'submission_successful') {
+    return (
+       <div className="min-h-screen w-full font-sans bg-slate-900 flex items-center justify-center p-4">
+         <main className="w-full max-w-2xl">
+           <div className="transition-all duration-500 bg-slate-800/50 border border-slate-700 rounded-2xl shadow-lg shadow-black/20 backdrop-blur-sm">
+             {renderContent()}
+           </div>
+         </main>
+       </div>
+    );
+  }
 
-  // Default layout for dashboard and report pages
+  // Default layout for dashboard
   return (
     <div className="min-h-screen w-full font-sans bg-slate-900">
-      {view !== 'quiz_hub' && (
-        <header className="w-full pt-8 pb-12 px-4 bg-slate-900/50 backdrop-blur-lg border-b border-blue-500/20 sticky top-0 z-10">
-          <div className="text-center max-w-4xl mx-auto">
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-blue-400">{getHeaderText()}</h1>
-            <p className="text-lg text-slate-400 mt-4">
-              {getHeaderSubtext()}
-            </p>
-          </div>
-        </header>
-      )}
-      <main className={`w-full max-w-5xl mx-auto px-4 pb-12 ${view !== 'quiz_hub' ? '-mt-8' : 'pt-12'}`}>
+      <main className="w-full max-w-5xl mx-auto px-4 pb-12 pt-12">
         <div className="transition-all duration-500 min-h-[450px] bg-slate-800/50 border border-slate-700 rounded-2xl shadow-lg shadow-black/20 backdrop-blur-sm">
           {renderContent()}
         </div>
