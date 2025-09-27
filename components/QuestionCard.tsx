@@ -28,10 +28,10 @@ const QuestionCard: React.FC<QuestionCardProps> = ({ question, onAnswer, onNext 
 
   const getButtonClass = (option: string) => {
     if (!selectedAnswer) {
-      return 'bg-white border-slate-300 hover:border-indigo-500 hover:bg-indigo-50 text-slate-700';
+      return 'bg-white border-slate-300 hover:border-blue-500 hover:bg-blue-50 text-slate-700';
     }
     if (option === selectedAnswer) {
-        return 'bg-indigo-600 border-indigo-600 text-white scale-105 shadow-lg shadow-indigo-500/20';
+        return 'bg-blue-600 border-blue-600 text-white scale-105 shadow-lg shadow-blue-500/20';
     }
     return 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed opacity-70';
   };
@@ -39,7 +39,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({ question, onAnswer, onNext 
   return (
     <div className="animate-fade-in">
       <div className="mb-6">
-        <p className="text-sm font-semibold text-indigo-600 uppercase tracking-wider">{question.category}</p>
+        <p className="text-sm font-semibold text-blue-600 uppercase tracking-wider">{question.category}</p>
         <h2 className="text-xl md:text-2xl font-bold text-slate-900 leading-tight mt-1">{question.question}</h2>
       </div>
       <div className="space-y-3">
@@ -53,7 +53,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({ question, onAnswer, onNext 
             <span className="text-md font-medium">{option}</span>
             {selectedAnswer === option && (
                 <div className="w-6 h-6 flex items-center justify-center bg-white rounded-full">
-                    <svg className="w-4 h-4 text-indigo-600" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path></svg>
+                    <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path></svg>
                 </div>
             )}
           </button>

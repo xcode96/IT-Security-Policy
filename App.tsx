@@ -5,7 +5,7 @@ import QuestionCard from './components/QuestionCard';
 import ResultsCard from './components/ResultsCard';
 import ProgressBar from './components/ProgressBar';
 import QuizHub from './components/QuizHub';
-import UserLogin from './components/UserInfo'; // Renamed conceptually to UserLogin
+import UserLogin from './components/UserInfo';
 import ReportCard from './components/ReportCard';
 import AdminLogin from './components/AdminLogin';
 import AdminPanel from './components/AdminPanel';
@@ -17,9 +17,10 @@ const App: React.FC = () => {
   const [user, setUser] = useState<{ fullName: string, username: string } | null>(null);
   const [quizzes, setQuizzes] = useState<Quiz[]>(INITIAL_QUIZZES);
   const [users, setUsers] = useState<User[]>([]);
-
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
 
+  // Effect to load and sanitize user data from localStorage on initial load.
+  // This ensures data integrity and handles cases of corrupted or outdated data from previous sessions.
   useEffect(() => {
     let savedUsers: User[] = [];
     try {
@@ -35,7 +36,7 @@ const App: React.FC = () => {
         localStorage.removeItem('app_users'); // Clear corrupted data
     }
 
-    // Sanitize all loaded users to ensure data integrity from previous sessions
+    // Sanitize all loaded users to ensure data integrity
     savedUsers = savedUsers.map(u => ({ 
         ...u, 
         username: u.username ? u.username.trim() : '',
@@ -43,11 +44,13 @@ const App: React.FC = () => {
         status: u.status || 'active' 
     })).filter(u => u.username); // Remove any users that became invalid after trim
 
-    const defaultUserExists = savedUsers.some(u => u.username === 'Demo');
+    // Ensure the default 'Demo' user exists
+    const defaultUserExists = savedUsers.some(u => u.username.toLowerCase() === 'demo');
     if (!defaultUserExists) {
         savedUsers.push({ fullName: 'Demo User', username: 'Demo', password: 'Demo', status: 'active' });
     }
     
+    // Clean up old, unused default users if they exist
     savedUsers = savedUsers.filter(u => u.username !== 'sso.user' && u.username !== 'main');
 
     localStorage.setItem('app_users', JSON.stringify(savedUsers));
@@ -157,22 +160,19 @@ const App: React.FC = () => {
     setView('report');
   }, []);
 
+  // Handles report submission. First, it tries to POST to the API.
+  // If the API call fails, it gracefully falls back to saving the report in localStorage.
   const handleSubmitReport = useCallback(async (reportData: TrainingReport) => {
     const API_BASE = 'https://iso27001-pnrp.onrender.com/api/reports';
     try {
         const response = await fetch(API_BASE, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(reportData),
         });
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
+        if (!response.ok) throw new Error('Network response was not ok');
     } catch (error) {
         console.error("Failed to submit report to server, saving locally:", error);
-        // Fallback to local storage
         const savedReportsRaw = localStorage.getItem('trainingReports');
         const savedReports: TrainingReport[] = savedReportsRaw ? JSON.parse(savedReportsRaw) : [];
         savedReports.push(reportData);
@@ -182,12 +182,11 @@ const App: React.FC = () => {
     // Expire user after submission
     if (user) {
         const updatedUsers = users.map(u => 
-            u.username === user.username ? { ...u, status: 'expired' as const } : u
+            u.username.toLowerCase() === user.username.toLowerCase() ? { ...u, status: 'expired' as const } : u
         );
         setUsers(updatedUsers);
         localStorage.setItem('app_users', JSON.stringify(updatedUsers));
     }
-
   }, [user, users]);
 
   const handleRestartTraining = useCallback(() => {
@@ -202,10 +201,7 @@ const App: React.FC = () => {
     setQuizzes(prevQuizzes => {
         return prevQuizzes.map(quiz => {
             if (quiz.id === quizId) {
-                const newQuestion: Question = {
-                    ...question,
-                    id: Date.now(), // Simple unique ID
-                };
+                const newQuestion: Question = { ...question, id: Date.now() };
                 return { ...quiz, questions: [...quiz.questions, newQuestion] };
             }
             return quiz;
@@ -225,21 +221,16 @@ const App: React.FC = () => {
         return false;
     }
     
-    const userToAdd: User = {
-        ...cleanUser,
-        status: 'active',
-    };
-
+    const userToAdd: User = { ...cleanUser, status: 'active' };
     const updatedUsers = [...users, userToAdd];
     setUsers(updatedUsers);
     localStorage.setItem('app_users', JSON.stringify(updatedUsers));
-    
     return true;
   };
 
   const handleDeleteUser = (usernameToDelete: string) => {
-    if (usernameToDelete === 'Demo') {
-        alert("Default system users cannot be deleted.");
+    if (usernameToDelete.toLowerCase() === 'demo') {
+        alert("The default Demo user cannot be deleted.");
         return;
     }
     const updatedUsers = users.filter(user => user.username !== usernameToDelete);
@@ -248,7 +239,6 @@ const App: React.FC = () => {
   };
 
   const handleImportQuizzes = (newQuizzes: Quiz[]) => {
-    // Basic validation
     if (Array.isArray(newQuizzes) && newQuizzes.every(q => q.id && q.name && Array.isArray(q.questions))) {
         setQuizzes(newQuizzes);
         alert('Quizzes imported successfully!');
@@ -258,9 +248,7 @@ const App: React.FC = () => {
   };
 
   if (isAdminView) {
-    if (!isAdminAuthenticated) {
-        return <AdminLogin onLogin={handleAdminLogin} />;
-    }
+    if (!isAdminAuthenticated) return <AdminLogin onLogin={handleAdminLogin} />;
     return <AdminPanel 
               quizzes={quizzes}
               users={users}
@@ -344,16 +332,16 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen w-full font-sans bg-slate-50">
-      <header className="w-full pt-12 pb-8 px-4">
-        <div className="text-center">
+    <div className="min-h-screen w-full font-sans bg-slate-100">
+      <header className="w-full pt-12 pb-8 px-4 border-b border-slate-200 bg-white">
+        <div className="text-center max-w-4xl mx-auto">
           <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-3 tracking-tight">{getHeaderText()}</h1>
-          <p className="text-md text-slate-500 max-w-2xl mx-auto">
+          <p className="text-md text-slate-500">
              {getHeaderSubtext()}
           </p>
         </div>
       </header>
-      <main className="w-full max-w-4xl mx-auto px-4 pb-12">
+      <main className="w-full max-w-4xl mx-auto px-4 py-12">
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 transition-all duration-500 min-h-[450px] flex flex-col justify-center overflow-hidden">
           {renderContent()}
         </div>

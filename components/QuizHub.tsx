@@ -39,7 +39,7 @@ const QuizHub: React.FC<QuizHubProps> = ({ user, quizzes, quizProgress, onStartQ
           const isCompleted = progress.status === 'completed';
 
           return (
-            <div key={quiz.id} className="bg-white p-6 rounded-xl border border-slate-200 flex flex-col transition-all duration-300 hover:border-indigo-300 hover:shadow-md">
+            <div key={quiz.id} className="bg-white p-6 rounded-xl border border-slate-200 flex flex-col transition-all duration-300 hover:border-blue-300 hover:shadow-lg hover:-translate-y-1">
               <div className="flex-grow flex items-center gap-4">
                 <TopicIcon categoryId={quiz.id} />
                 <div>
@@ -58,7 +58,7 @@ const QuizHub: React.FC<QuizHubProps> = ({ user, quizzes, quizProgress, onStartQ
                   className={`px-6 py-2 text-white font-semibold rounded-lg text-sm transition-all duration-200 transform shadow-sm flex items-center gap-2 ${
                     isCompleted 
                       ? 'bg-slate-300 cursor-not-allowed' 
-                      : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-500/20 hover:scale-105'
+                      : 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/20 hover:scale-105'
                   }`}
                 >
                   {isCompleted ? 'Completed' : 'Start'}
@@ -81,7 +81,7 @@ const QuizHub: React.FC<QuizHubProps> = ({ user, quizzes, quizProgress, onStartQ
               <p className="text-slate-500 mt-2 mb-6 max-w-md mx-auto">You're ready to generate your final training report to submit for review.</p>
               <button
                 onClick={onGenerateReport}
-                className="w-full max-w-xs mx-auto px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-lg transition-transform duration-200 transform hover:scale-105 shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2"
+                className="w-full max-w-xs mx-auto px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-lg transition-transform duration-200 transform hover:scale-105 shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2"
               >
                  <svg className="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />

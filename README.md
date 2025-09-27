@@ -17,34 +17,41 @@ This is an interactive, single-page application designed to test and improve kno
 
 ---
 
-## How to Deploy to a Live Server (GitHub Pages)
+## How to Deploy to a Live Server (GitHub Pages or Vercel)
 
-You can host this application for free using GitHub Pages.
+You can host this application for free using modern static hosting platforms.
 
 ### Step 1: Create a GitHub Repository
 
 1.  Create a new repository on your GitHub account.
 2.  Upload all the project files (`index.html`, `App.tsx`, etc.) to this new repository.
 
-### Step 2: Enable GitHub Pages
+### Step 2: Deploy
 
+**Option A: Vercel (Recommended)**
+1.  Sign up for a free account at [vercel.com](https://vercel.com).
+2.  Connect your GitHub account.
+3.  Import the repository you just created.
+4.  Vercel will automatically detect that it's a static site and deploy it. No configuration is needed.
+5.  You will be given a live URL (like `https://<project-name>.vercel.app`).
+
+**Option B: GitHub Pages**
 1.  In your repository on GitHub, go to the **Settings** tab.
 2.  In the left sidebar, click on **Pages**.
 3.  Under the "Build and deployment" section, for the **Source**, select **Deploy from a branch**.
 4.  For the **Branch**, select `main` (or `master`) and keep the folder as `/ (root)`.
 5.  Click **Save**.
-
-GitHub will now build your page and deploy it. It may take a few minutes. Once it's ready, you will see a URL at the top of the Pages settings, like `https://<your-username>.github.io/<your-repository-name>/`. This is your live application URL.
+6.  You will get a URL like `https://<your-username>.github.io/<your-repository-name>/`.
 
 ---
 
 ## Data Workflow: How to Update the Live Quiz Questions
 
-Because this application is a **static site** (it doesn't have a live database), updating the quiz questions requires a simple code update. The Admin Panel is a powerful tool to help you with this.
+Because this application is a **static site** (it doesn't have a live database), updating the quiz questions for everyone requires a simple code update. The Admin Panel is a powerful tool to help you with this.
 
 **The process is designed to be safe and easy:**
 
-1.  **Test Locally or on a Staging Site**: Access the **Admin Panel** of your application (by adding `?page=admin` to the URL).
+1.  **Prepare Updates**: Access the **Admin Panel** of your live or local application (by adding `?page=admin` to the URL).
 
 2.  **Add Your New Questions**: Go to the **Question Management** tab and use the form to add all the new questions you need for each category.
 
@@ -64,4 +71,4 @@ Because this application is a **static site** (it doesn't have a live database),
     git push
     ```
 
-6.  **Done!**: GitHub Pages will automatically redeploy your site with the changes. Within a few minutes, the live application will be serving the new, updated set of quiz questions to all users.
+6.  **Done!**: Your hosting provider (Vercel or GitHub Pages) will automatically redeploy your site with the changes. Within a few minutes, the live application will be serving the new, updated set of quiz questions to all users.

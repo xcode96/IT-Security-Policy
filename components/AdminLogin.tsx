@@ -17,10 +17,10 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
     }
   };
   
-  const commonInputClasses = "w-full p-3 bg-slate-100 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200";
+  const commonInputClasses = "w-full p-3 bg-slate-100 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200";
 
   return (
-    <div className="min-h-screen w-full font-sans">
+    <div className="min-h-screen w-full font-sans bg-slate-100">
       <header className="w-full pt-20 pb-8 px-4">
           <div className="text-center max-w-md mx-auto">
               <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-2 tracking-tight">Admin Access</h1>
@@ -45,7 +45,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
                   {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
                   <button
                       type="submit"
-                      className="w-full mt-4 px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-transform duration-200 transform hover:scale-105 shadow-md shadow-indigo-500/20"
+                      className="w-full mt-4 px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-transform duration-200 transform hover:scale-105 shadow-md shadow-blue-500/20"
                   >
                       Login
                   </button>
