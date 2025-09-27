@@ -29,8 +29,8 @@ const UserLogin: React.FC<UserLoginProps> = ({ onLogin }) => {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0-10.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.75c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.75h-.152c-3.196 0-6.1-1.249-8.25-3.286zm0 13.036h.008v.008h-.008v-.008z" />
                 </svg>
             </div>
-            <h1 className="text-3xl font-bold text-slate-100">IT Security Training</h1>
-            <p className="mt-2 text-slate-400">Please log in with your Employee ID to begin the assessment.</p>
+            <h1 className="text-3xl font-bold text-slate-100">Security First</h1>
+            <p className="mt-2 text-slate-400">Your commitment to security is crucial. This assessment ensures we maintain the highest standards of data protection.</p>
         </div>
         
         {/* Right Panel - Form */}

@@ -10,6 +10,7 @@ const AdminDashboard: React.FC = () => {
     const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
     const [copiedReportId, setCopiedReportId] = useState<string | null>(null);
     const [viewingCertificateFor, setViewingCertificateFor] = useState<TrainingReport | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
 
     const API_BASE = 'https://iso27001-pnrp.onrender.com/api/reports';
 
@@ -29,6 +30,15 @@ const AdminDashboard: React.FC = () => {
         };
         fetchReports();
     }, []);
+
+    const filteredReports = useMemo(() => {
+        const term = searchTerm.toLowerCase().trim();
+        if (!term) return reports;
+        return reports.filter(report =>
+            report.user.fullName.toLowerCase().includes(term) ||
+            report.user.username.toLowerCase().includes(term)
+        );
+    }, [reports, searchTerm]);
 
     const handleClearReports = async () => {
         if (window.confirm("Are you sure you want to clear all submitted reports? This action cannot be undone.")) {
@@ -124,11 +134,22 @@ const AdminDashboard: React.FC = () => {
 
     return (
         <div className="animate-fade-in">
-            <div className="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
-                <h3 className="text-xl font-bold text-slate-100">All Reports ({reports.length})</h3>
-                <button onClick={handleClearReports} disabled={reports.length === 0} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-sm transition-colors duration-200 disabled:bg-slate-600 disabled:cursor-not-allowed">
-                    Clear All Reports
-                </button>
+            <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6 border-b border-slate-700 pb-4">
+                 <div>
+                    <h3 className="text-xl font-bold text-slate-100">All Reports ({filteredReports.length})</h3>
+                </div>
+                <div className="flex items-center gap-4 w-full md:w-auto">
+                    <input
+                        type="text"
+                        placeholder="Search by name or ID..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full md:w-64 p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                    />
+                    <button onClick={handleClearReports} disabled={reports.length === 0} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-sm transition-colors duration-200 disabled:bg-slate-600 disabled:cursor-not-allowed flex-shrink-0">
+                        Clear All
+                    </button>
+                </div>
             </div>
             {reports.length === 0 ? (
                 <div className="text-center py-12">
@@ -136,9 +157,15 @@ const AdminDashboard: React.FC = () => {
                     <h3 className="mt-2 text-lg font-medium text-slate-200">No reports submitted</h3>
                     <p className="mt-1 text-sm text-slate-400">As users complete their training, reports will appear here.</p>
                 </div>
+            ) : filteredReports.length === 0 ? (
+                <div className="text-center py-12">
+                     <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-12 w-12 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
+                    <h3 className="mt-2 text-lg font-medium text-slate-200">No Reports Found</h3>
+                    <p className="mt-1 text-sm text-slate-400">Your search did not match any reports. Try different keywords.</p>
+                </div>
             ) : (
                 <div className="space-y-4">
-                    {reports.map(report => (
+                    {filteredReports.map(report => (
                         <div key={report.id} className="bg-slate-800 rounded-xl border border-slate-700 transition-shadow hover:shadow-sm overflow-hidden">
                             <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between">
                                 <div className="mb-3 sm:mb-0">
