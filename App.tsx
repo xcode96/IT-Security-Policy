@@ -43,12 +43,12 @@ const App: React.FC = () => {
         status: u.status || 'active' 
     })).filter(u => u.username); // Remove any users that became invalid after trim
 
-    const defaultUserExists = savedUsers.some(u => u.username === 'main');
+    const defaultUserExists = savedUsers.some(u => u.username === 'Demo');
     if (!defaultUserExists) {
-        savedUsers.push({ fullName: 'Main User', username: 'main', password: 'Cat', status: 'active' });
+        savedUsers.push({ fullName: 'Demo User', username: 'Demo', password: 'Demo', status: 'active' });
     }
     
-    savedUsers = savedUsers.filter(u => u.username !== 'sso.user');
+    savedUsers = savedUsers.filter(u => u.username !== 'sso.user' && u.username !== 'main');
 
     localStorage.setItem('app_users', JSON.stringify(savedUsers));
     setUsers(savedUsers);
@@ -77,8 +77,8 @@ const App: React.FC = () => {
   };
   
   const handleUserLogin = useCallback((username: string, password: string): { success: boolean, message: string } => {
-    const cleanUsername = username.trim(); // Sanitize input here
-    const userFound = users.find(u => u.username === cleanUsername);
+    const cleanUsername = username.trim().toLowerCase(); // Sanitize input and make case-insensitive
+    const userFound = users.find(u => u.username.toLowerCase() === cleanUsername);
     if (userFound) {
       if (userFound.password !== password) {
         return { success: false, message: 'Invalid Employee ID or password.' };
@@ -220,7 +220,7 @@ const App: React.FC = () => {
         password: newUser.password,
     };
 
-    if (users.some(u => u.username === cleanUser.username)) {
+    if (users.some(u => u.username.toLowerCase() === cleanUser.username.toLowerCase())) {
         alert('Employee ID already exists.');
         return false;
     }
@@ -238,14 +238,13 @@ const App: React.FC = () => {
   };
 
   const handleDeleteUser = (usernameToDelete: string) => {
-    if (usernameToDelete === 'main') {
+    if (usernameToDelete === 'Demo') {
         alert("Default system users cannot be deleted.");
         return;
     }
     const updatedUsers = users.filter(user => user.username !== usernameToDelete);
     setUsers(updatedUsers);
     localStorage.setItem('app_users', JSON.stringify(updatedUsers));
-    alert('User deleted successfully!');
   };
 
   const handleImportQuizzes = (newQuizzes: Quiz[]) => {
@@ -277,7 +276,9 @@ const App: React.FC = () => {
       case 'user_login':
         return <UserLogin onLogin={handleUserLogin} />;
       case 'quiz_hub':
+        if(!user) return null;
         return <QuizHub 
+                  user={user}
                   quizzes={quizzes}
                   quizProgress={quizProgress} 
                   onStartQuiz={handleStartQuiz} 
@@ -328,22 +329,27 @@ const App: React.FC = () => {
   
   const getHeaderText = () => {
     if(view === 'user_login') return 'IT Security Policy';
-    if(view === 'quiz_hub') return 'Training Dashboard';
+    if(view === 'quiz_hub' && user) return `Welcome, ${user.fullName}`;
     if(view === 'report') return 'Training Completion Report';
     if(activeQuiz) return activeQuiz.name;
     return 'IT Security Policy Training';
   };
+  
+  const getHeaderSubtext = () => {
+    if(view === 'user_login') return 'Please log in to begin your mandatory security assessment.';
+    if(view === 'quiz_hub') return 'Complete all quizzes to generate your final report.';
+    if(view === 'report') return 'Submit your report to complete the training process.';
+    if(view === 'quiz_running') return 'Test your knowledge on essential security practices.';
+    return 'An interactive quiz to test and improve knowledge on core IT security policies.';
+  }
 
   return (
-    <div className="min-h-screen w-full font-sans">
+    <div className="min-h-screen w-full font-sans bg-slate-50">
       <header className="w-full pt-12 pb-8 px-4">
         <div className="text-center">
           <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-3 tracking-tight">{getHeaderText()}</h1>
           <p className="text-md text-slate-500 max-w-2xl mx-auto">
-             {view === 'user_login' && 'Please log in to begin your mandatory security assessment.'}
-             {view === 'quiz_hub' && 'Complete all quizzes to generate your report.'}
-             {view === 'report' && 'Submit your report to complete the training.'}
-             {view === 'quiz_running' && 'Test your knowledge on essential security practices.'}
+             {getHeaderSubtext()}
           </p>
         </div>
       </header>

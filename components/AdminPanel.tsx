@@ -41,7 +41,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ quizzes, users, onAddUser, onDe
 
         if (success) {
             setNewUser({ fullName: '', username: '', password: '' }); // Reset form
-            alert('User added successfully!');
         }
     };
     
@@ -124,7 +123,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ quizzes, users, onAddUser, onDe
     const commonInputClasses = "w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors";
     
     return (
-        <div className="min-h-screen w-full font-sans text-slate-900">
+        <div className="min-h-screen w-full font-sans text-slate-900 bg-slate-50">
             <header className="w-full pt-12 pb-8 px-4 text-center">
                 <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-2 tracking-tight">Administrator Panel</h1>
                 <p className="text-lg text-slate-500">Manage quizzes, users, and review reports.</p>
@@ -180,7 +179,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ quizzes, users, onAddUser, onDe
                                                             {user.status}
                                                         </p>
                                                     </div>
-                                                    {user.username !== 'main' && (
+                                                    {user.username !== 'Demo' && (
                                                         <button
                                                             onClick={() => {
                                                                 if (window.confirm(`Are you sure you want to delete the user "${user.username}"?`)) {
@@ -205,6 +204,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ quizzes, users, onAddUser, onDe
 
                         {activeTab === 'questions' && (
                             <div className="animate-fade-in">
+                                <div className="p-4 mb-6 bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-lg">
+                                  <h3 className="font-bold text-lg mb-1">How to Update the Live Quiz</h3>
+                                  <p className="text-sm">
+                                      Because this is a static site, any new questions you add here are only temporary. To make them permanent for all users, you must:
+                                      <br/> 1. <strong>Export to JSON</strong> after adding your questions.
+                                      <br/> 2. Replace the content of the <strong>`constants.ts`</strong> file in the source code with the new JSON data.
+                                      <br/> 3. <strong>Deploy the updated code</strong> to the live server.
+                                  </p>
+                                </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     <div className="bg-slate-50 p-6 rounded-lg border border-slate-200">
                                         <h2 className="text-xl font-bold mb-4 border-b border-slate-200 pb-2 text-slate-900">Add New Question</h2>

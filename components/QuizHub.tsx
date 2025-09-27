@@ -1,15 +1,16 @@
 import React from 'react';
-import { QuizProgress, Quiz } from '../types';
+import { QuizProgress, Quiz, User } from '../types';
 import TopicIcon from './TopicIcon';
 
 interface QuizHubProps {
+  user: { fullName: string; username: string; };
   quizzes: Quiz[];
   quizProgress: QuizProgress;
   onStartQuiz: (quizId: string) => void;
   onGenerateReport: () => void;
 }
 
-const QuizHub: React.FC<QuizHubProps> = ({ quizzes, quizProgress, onStartQuiz, onGenerateReport }) => {
+const QuizHub: React.FC<QuizHubProps> = ({ user, quizzes, quizProgress, onStartQuiz, onGenerateReport }) => {
 
   const allQuizzesCompleted = Object.values(quizProgress).every(
     (quiz) => quiz.status === 'completed'
