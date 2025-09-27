@@ -186,7 +186,7 @@ const App: React.FC = () => {
   }, []);
 
   const handleSubmitReport = useCallback(async (reportData: TrainingReport): Promise<boolean> => {
-    const API_BASE = 'https://iso27001-pnrp.onrender.com/api/reports';
+    const API_BASE = 'https://it-security-policy.onrender.com/api/reports';
     try {
         const response = await fetch(API_BASE, {
             method: 'POST',

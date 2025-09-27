@@ -11,7 +11,7 @@ const AdminDashboard: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState<'all' | 'passed' | 'failed'>('all');
 
-    const API_BASE = 'https://iso27001-pnrp.onrender.com/api/reports';
+    const API_BASE = 'https://it-security-policy.onrender.com/api/reports';
 
     useEffect(() => {
         const fetchReports = async () => {
