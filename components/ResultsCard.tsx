@@ -6,7 +6,7 @@ interface ResultsCardProps {
 
 const ResultsCard: React.FC<ResultsCardProps> = ({ onReturnToHub }) => {
   const CompleteIcon = () => (
-    <svg className="w-16 h-16 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg className="w-16 h-16 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
   );
@@ -17,11 +17,11 @@ const ResultsCard: React.FC<ResultsCardProps> = ({ onReturnToHub }) => {
         <CompleteIcon />
       </div>
       
-      <h2 className="text-3xl font-bold text-slate-900 mb-2">
-        Quiz Complete
+      <h2 className="text-3xl font-bold text-slate-100 mb-2">
+        Module Complete
       </h2>
 
-      <p className="text-slate-500 text-lg mb-8">Your progress has been saved.</p>
+      <p className="text-slate-400 text-lg mb-8">Your progress has been saved.</p>
 
       <button
         onClick={onReturnToHub}

@@ -3,7 +3,6 @@ import { QUIZZES as INITIAL_QUIZZES } from './constants';
 import { Question, QuizProgress, TrainingReport, Quiz, User } from './types';
 import QuestionCard from './components/QuestionCard';
 import ResultsCard from './components/ResultsCard';
-import ProgressBar from './components/ProgressBar';
 import QuizHub from './components/QuizHub';
 import UserLogin from './components/UserInfo';
 import ReportCard from './components/ReportCard';
@@ -261,8 +260,6 @@ const App: React.FC = () => {
 
   const renderContent = () => {
     switch(view) {
-      case 'user_login':
-        return <UserLogin onLogin={handleUserLogin} />;
       case 'quiz_hub':
         if(!user) return null;
         return <QuizHub 
@@ -275,12 +272,12 @@ const App: React.FC = () => {
       case 'quiz_running':
         if (!activeQuiz || activeQuiz.questions.length === 0) {
           return (
-            <div className="p-8 text-center animate-fade-in">
-                <h2 className="text-2xl font-bold text-slate-900 mb-2">Error Loading Quiz</h2>
-                <p className="text-slate-500 mb-6">The selected quiz could not be found. Please return to the dashboard and try again.</p>
+            <div className="p-8 text-center animate-fade-in bg-slate-800/50 rounded-2xl">
+                <h2 className="text-2xl font-bold text-slate-100 mb-2">Error Loading Quiz</h2>
+                <p className="text-slate-400 mb-6">The selected quiz could not be found. Please return to the dashboard and try again.</p>
                 <button 
                     onClick={handleReturnToHub} 
-                    className="px-8 py-3 bg-slate-700 hover:bg-slate-800 text-white font-bold rounded-lg transition-transform duration-200 transform hover:scale-105"
+                    className="px-8 py-3 bg-slate-700 hover:bg-slate-600 text-slate-100 font-bold rounded-lg transition-transform duration-200 transform hover:scale-105"
                 >
                     Return to Dashboard
                 </button>
@@ -288,14 +285,13 @@ const App: React.FC = () => {
           );
         }
         return (
-          <div className="p-6 md:p-8">
-            <ProgressBar current={currentQuestionIndex + 1} total={activeQuiz.questions.length} />
             <QuestionCard
               question={activeQuiz.questions[currentQuestionIndex]}
+              currentQuestionIndex={currentQuestionIndex}
+              totalQuestions={activeQuiz.questions.length}
               onAnswer={handleAnswer}
               onNext={handleNext}
             />
-          </div>
         );
       case 'quiz_finished':
         return <ResultsCard onReturnToHub={handleReturnToHub} />;
@@ -316,33 +312,54 @@ const App: React.FC = () => {
   };
   
   const getHeaderText = () => {
-    if(view === 'user_login') return 'IT Security Policy';
-    if(view === 'quiz_hub' && user) return `Welcome, ${user.fullName}`;
-    if(view === 'report') return 'Training Completion Report';
+    if(view === 'report') return 'Completion Report';
+    if(view === 'quiz_finished' && activeQuiz) return activeQuiz.name;
     if(activeQuiz) return activeQuiz.name;
-    return 'IT Security Policy Training';
+    return 'IT Security Policy';
   };
   
   const getHeaderSubtext = () => {
-    if(view === 'user_login') return 'Please log in to begin your mandatory security assessment.';
-    if(view === 'quiz_hub') return 'Complete all quizzes to generate your final report.';
-    if(view === 'report') return 'Submit your report to complete the training process.';
+    if(view === 'report') return 'Submit your report to finalize the process.';
     if(view === 'quiz_running') return 'Test your knowledge on essential security practices.';
+    if(view === 'quiz_finished') return 'Your results for this module have been saved.';
     return 'An interactive quiz to test and improve knowledge on core IT security policies.';
   }
 
+  // Special layout for user login
+  if (view === 'user_login') {
+    return (
+       <div className="min-h-screen w-full bg-slate-900 flex items-center justify-center p-4">
+        <UserLogin onLogin={handleUserLogin} />
+      </div>
+    );
+  }
+  
+  // Special layout for quiz running (distraction-free mode)
+  if (view === 'quiz_running') {
+    return (
+       <div className="min-h-screen w-full font-sans bg-slate-900 flex items-center justify-center p-4">
+         <main className="w-full max-w-3xl">
+          {renderContent()}
+         </main>
+       </div>
+    );
+  }
+
+  // Default layout for dashboard, results, and report pages
   return (
-    <div className="min-h-screen w-full font-sans bg-slate-100">
-      <header className="w-full pt-12 pb-8 px-4 border-b border-slate-200 bg-white">
-        <div className="text-center max-w-4xl mx-auto">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-3 tracking-tight">{getHeaderText()}</h1>
-          <p className="text-md text-slate-500">
-             {getHeaderSubtext()}
-          </p>
-        </div>
-      </header>
-      <main className="w-full max-w-4xl mx-auto px-4 py-12">
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 transition-all duration-500 min-h-[450px] flex flex-col justify-center overflow-hidden">
+    <div className="min-h-screen w-full font-sans bg-slate-900">
+      {view !== 'quiz_hub' && (
+        <header className="w-full pt-8 pb-12 px-4 bg-slate-900/50 backdrop-blur-lg border-b border-blue-500/20 sticky top-0 z-10">
+          <div className="text-center max-w-4xl mx-auto">
+            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-blue-400">{getHeaderText()}</h1>
+            <p className="text-lg text-slate-400 mt-4">
+              {getHeaderSubtext()}
+            </p>
+          </div>
+        </header>
+      )}
+      <main className={`w-full max-w-5xl mx-auto px-4 pb-12 ${view !== 'quiz_hub' ? '-mt-8' : 'pt-12'}`}>
+        <div className="transition-all duration-500 min-h-[450px] bg-slate-800/50 border border-slate-700 rounded-2xl shadow-lg shadow-black/20 backdrop-blur-sm">
           {renderContent()}
         </div>
       </main>
