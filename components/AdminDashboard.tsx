@@ -5,6 +5,8 @@ import Certificate from './Certificate';
 
 const AdminDashboard: React.FC = () => {
     const [reports, setReports] = useState<TrainingReport[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
     const [copiedReportId, setCopiedReportId] = useState<string | null>(null);
     const [viewingCertificateFor, setViewingCertificateFor] = useState<TrainingReport | null>(null);
@@ -15,16 +17,20 @@ const AdminDashboard: React.FC = () => {
 
     useEffect(() => {
         const fetchReports = async () => {
+            setIsLoading(true);
+            setError(null);
             try {
                 const response = await fetch(API_BASE);
-                if (!response.ok) throw new Error('Network response was not ok');
+                if (!response.ok) {
+                    throw new Error(`Network response was not ok (${response.status})`);
+                }
                 const serverReports: TrainingReport[] = await response.json();
                 setReports(serverReports.sort((a, b) => new Date(b.submissionDate).getTime() - new Date(a.submissionDate).getTime()));
-            } catch (error) {
-                console.error("Failed to fetch reports from server, loading from local storage:", error);
-                const savedReportsRaw = localStorage.getItem('trainingReports');
-                const savedReports: TrainingReport[] = savedReportsRaw ? JSON.parse(savedReportsRaw) : [];
-                setReports(savedReports.sort((a, b) => new Date(b.submissionDate).getTime() - new Date(a.submissionDate).getTime()));
+            } catch (err) {
+                console.error("Failed to fetch reports from server:", err);
+                setError("Could not connect to the live server to fetch reports. Please check your internet connection and refresh the page.");
+            } finally {
+                setIsLoading(false);
             }
         };
         fetchReports();
@@ -121,13 +127,12 @@ const AdminDashboard: React.FC = () => {
             try {
                 const response = await fetch(API_BASE, { method: 'DELETE' });
                 if (!response.ok) throw new Error('Server-side deletion failed.');
-                localStorage.removeItem('trainingReports');
                 setReports([]);
                 setSelectedReportId(null);
                 alert('All reports have been cleared.');
             } catch (error) {
                 console.error("Failed to clear reports from server:", error);
-                alert("Could not clear reports from the server. Note: Local fallback reports can be cleared manually via browser developer tools.");
+                alert("Could not clear reports from the server. Please check the server status.");
             }
         }
     };
@@ -208,6 +213,76 @@ const AdminDashboard: React.FC = () => {
       );
     };
 
+    const renderContent = () => {
+        if (isLoading) {
+            return (
+                <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400 mx-auto"></div>
+                    <p className="mt-4 text-slate-400">Fetching live reports...</p>
+                </div>
+            );
+        }
+
+        if (error) {
+            return (
+                <div className="text-center py-12 bg-red-900/20 border border-red-500/30 rounded-lg p-6">
+                    <h3 className="text-lg font-bold text-red-400">Connection Error</h3>
+                    <p className="mt-2 text-red-300/80">{error}</p>
+                </div>
+            );
+        }
+
+        if (reports.length === 0) {
+            return (
+                <div className="text-center py-12">
+                    <svg className="mx-auto h-12 w-12 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    <h3 className="mt-2 text-lg font-medium text-slate-200">No reports submitted</h3>
+                    <p className="mt-1 text-sm text-slate-400">As users complete their training, reports will appear here.</p>
+                </div>
+            );
+        }
+
+        if (filteredReports.length === 0) {
+            return (
+                 <div className="text-center py-12">
+                     <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-12 w-12 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
+                    <h3 className="mt-2 text-lg font-medium text-slate-200">No Reports Found</h3>
+                    <p className="mt-1 text-sm text-slate-400">Your search did not match any reports. Try different keywords.</p>
+                </div>
+            );
+        }
+
+        return (
+            <div className="space-y-4">
+                {filteredReports.map(report => (
+                    <div key={report.id} className="bg-slate-800 rounded-xl border border-slate-700 transition-shadow hover:shadow-sm overflow-hidden">
+                        <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between">
+                            <div className="mb-3 sm:mb-0">
+                                <h3 className="font-bold text-slate-200 text-lg">{report.user.fullName} <span className="text-slate-400 font-normal">(Username: {report.user.username})</span></h3>
+                                <p className="text-slate-400 text-sm">Submitted on: {new Date(report.submissionDate).toLocaleString()}</p>
+                            </div>
+                            <div className="flex items-center gap-2 w-full sm:w-auto flex-shrink-0">
+                                <span className={`px-3 py-1 text-xs font-bold leading-none rounded-full w-20 text-center ${report.overallResult ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                                    {report.overallResult ? 'Pass' : 'Fail'}
+                                </span>
+                                 <button onClick={() => setViewingCertificateFor(report)} className="px-4 py-2 font-semibold rounded-lg text-sm transition-all duration-200 shadow-sm w-full sm:w-auto border bg-slate-700 hover:bg-slate-600 text-slate-300 border-slate-600">
+                                    Certificate
+                                </button>
+                                <button onClick={() => handleShareReport(report)} className={`px-4 py-2 font-semibold rounded-lg text-sm transition-all duration-200 shadow-sm w-full sm:w-auto border ${copiedReportId === report.id ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-slate-700 hover:bg-slate-600 text-slate-300 border-slate-600'}`}>
+                                    {copiedReportId === report.id ? 'Copied!' : 'Share'}
+                                </button>
+                                <button onClick={() => setSelectedReportId(selectedReportId === report.id ? null : report.id)} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-sm transition-transform duration-200 transform hover:scale-105 shadow-sm shadow-blue-500/10 w-full sm:w-auto">
+                                    {selectedReportId === report.id ? 'Hide' : 'Details'}
+                                </button>
+                            </div>
+                        </div>
+                        {selectedReportId === report.id && selectedReport && <ReportDetailView report={selectedReport} />}
+                    </div>
+                ))}
+            </div>
+        );
+    };
+
     return (
         <div className="animate-fade-in">
             {/* Dashboard Stats */}
@@ -261,52 +336,13 @@ const AdminDashboard: React.FC = () => {
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path d="M10.75 2.75a.75.75 0 00-1.5 0v8.614L6.295 8.235a.75.75 0 10-1.09 1.03l4.25 4.5a.75.75 0 001.09 0l4.25-4.5a.75.75 0 00-1.09-1.03l-2.955 3.129V2.75z" /><path d="M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z" /></svg>
                         Export
                     </button>
-                    <button onClick={handleClearReports} disabled={reports.length === 0} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-sm transition-colors duration-200 disabled:bg-slate-600 disabled:cursor-not-allowed flex-shrink-0">
+                    <button onClick={handleClearReports} disabled={reports.length === 0 || isLoading} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-sm transition-colors duration-200 disabled:bg-slate-600 disabled:cursor-not-allowed flex-shrink-0">
                         Clear All
                     </button>
                 </div>
             </div>
-            {reports.length === 0 ? (
-                <div className="text-center py-12">
-                    <svg className="mx-auto h-12 w-12 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                    <h3 className="mt-2 text-lg font-medium text-slate-200">No reports submitted</h3>
-                    <p className="mt-1 text-sm text-slate-400">As users complete their training, reports will appear here.</p>
-                </div>
-            ) : filteredReports.length === 0 ? (
-                <div className="text-center py-12">
-                     <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-12 w-12 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
-                    <h3 className="mt-2 text-lg font-medium text-slate-200">No Reports Found</h3>
-                    <p className="mt-1 text-sm text-slate-400">Your search did not match any reports. Try different keywords.</p>
-                </div>
-            ) : (
-                <div className="space-y-4">
-                    {filteredReports.map(report => (
-                        <div key={report.id} className="bg-slate-800 rounded-xl border border-slate-700 transition-shadow hover:shadow-sm overflow-hidden">
-                            <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between">
-                                <div className="mb-3 sm:mb-0">
-                                    <h3 className="font-bold text-slate-200 text-lg">{report.user.fullName} <span className="text-slate-400 font-normal">(Username: {report.user.username})</span></h3>
-                                    <p className="text-slate-400 text-sm">Submitted on: {new Date(report.submissionDate).toLocaleString()}</p>
-                                </div>
-                                <div className="flex items-center gap-2 w-full sm:w-auto flex-shrink-0">
-                                    <span className={`px-3 py-1 text-xs font-bold leading-none rounded-full w-20 text-center ${report.overallResult ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
-                                        {report.overallResult ? 'Pass' : 'Fail'}
-                                    </span>
-                                     <button onClick={() => setViewingCertificateFor(report)} className="px-4 py-2 font-semibold rounded-lg text-sm transition-all duration-200 shadow-sm w-full sm:w-auto border bg-slate-700 hover:bg-slate-600 text-slate-300 border-slate-600">
-                                        Certificate
-                                    </button>
-                                    <button onClick={() => handleShareReport(report)} className={`px-4 py-2 font-semibold rounded-lg text-sm transition-all duration-200 shadow-sm w-full sm:w-auto border ${copiedReportId === report.id ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-slate-700 hover:bg-slate-600 text-slate-300 border-slate-600'}`}>
-                                        {copiedReportId === report.id ? 'Copied!' : 'Share'}
-                                    </button>
-                                    <button onClick={() => setSelectedReportId(selectedReportId === report.id ? null : report.id)} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-sm transition-transform duration-200 transform hover:scale-105 shadow-sm shadow-blue-500/10 w-full sm:w-auto">
-                                        {selectedReportId === report.id ? 'Hide' : 'Details'}
-                                    </button>
-                                </div>
-                            </div>
-                            {selectedReportId === report.id && selectedReport && <ReportDetailView report={selectedReport} />}
-                        </div>
-                    ))}
-                </div>
-            )}
+
+            {renderContent()}
             
             {viewingCertificateFor && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in" onClick={() => setViewingCertificateFor(null)}>
