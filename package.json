@@ -1,21 +1,17 @@
 {
-  "name": "it-security-policy-quiz",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "name": "it-security-api-server",
+  "version": "1.0.0",
+  "description": "A simple API server for the IT Security Training application.",
+  "main": "server.js",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "start": "node server.js"
   },
   "dependencies": {
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "express": "^4.19.2"
   },
-  "devDependencies": {
-    "@types/node": "^22.14.0",
-    "@vitejs/plugin-react": "^5.0.0",
-    "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

@@ -1,35 +1,63 @@
 # IT Security Policy Training Application
 
-This is an interactive, single-page application designed to test and improve knowledge on core IT security policy topics. It provides a user-friendly quiz interface for employees and a comprehensive, role-based admin panel for managing users, quiz content, and training reports.
+This is an interactive, full-stack application designed to test and improve knowledge on core IT security topics. It consists of two main parts:
 
-## Key Features
-
-- **Secure User & Admin Logins**: Separate, password-protected access for trainees and administrators.
-- **Role-Based Access Control (RBAC)**:
-    - **Super Admin**: Full control, including managing other admin accounts.
-    - **Editor**: Can manage users, reports, and questions but not other admins.
-    - **Viewer**: Read-only access to all data.
-- **Formal Assessment Workflow**:
-    - Users who fail can request a retake, which must be approved by an admin.
-    - Users who pass can request a certificate.
-- **Comprehensive Admin Panel**:
-  - **Reports Dashboard**: At-a-glance statistics on pass/fail rates.
-  - **Report Management**: View, filter, search, and export individual user reports to CSV.
-  - **User Management**: Add, delete, search, and export user accounts.
-  - **Retake Request Management**: Approve or deny user requests to retake the exam.
-  - **Admin Management**: (Super Admin only) Create, delete, and manage other admin accounts.
-  - **Certificate Generation**: View and print certificates of completion for users.
-- **Dynamic Quiz System**: Quizzes are loaded from a central `constants.ts` file, making them easy to update via a clear workflow.
-- **Resilient Data Handling**: The application is designed to post reports to a live API but includes a seamless **local storage fallback**, ensuring it remains 100% functional even if the backend server is unavailable.
+1.  **Frontend**: A user-friendly React application for employees to take quizzes and for administrators to manage the system.
+2.  **Backend**: A simple Node.js/Express API server to receive, store, and manage training reports.
 
 ---
 
-## 1. Configuration: Connecting to Your API
+## Project Setup & Deployment Guide
 
-This application can send training reports to your own backend server. To connect it, you need to update the API endpoint URL in the code.
+Follow these steps to get both the backend API and the frontend application live.
+
+### Part 1: Backend API Setup & Deployment
+
+The backend server is responsible for storing user reports. You need to deploy this first to get a live URL.
+
+#### A. How to Run the API Locally (for testing)
+
+1.  **Prerequisites**: Make sure you have [Node.js](https://nodejs.org/) installed on your computer.
+2.  **Install Dependencies**: In your project folder (where `package.json` and `server.js` are), open a terminal and run:
+    ```bash
+    npm install
+    ```
+3.  **Start the Server**: After installation, run:
+    ```bash
+    npm start
+    ```
+4.  Your API is now running at `http://localhost:3001`.
+
+> **Note**: This server uses in-memory storage, which means all data will be lost when the server restarts. For a production-grade solution, you would connect this to a database like PostgreSQL or MongoDB.
+
+#### B. How to Deploy the API to a Live Server (Recommended: Render)
+
+We'll use a free service called [Render](https://render.com) to host the API.
+
+1.  **Create a GitHub Repository for the API**:
+    - Create a **new, separate** repository on your GitHub account (e.g., `it-security-api`).
+    - Upload **only** the `server.js` and `package.json` files to this new repository.
+
+2.  **Deploy on Render**:
+    - Sign up for a free account at [render.com](https://render.com).
+    - On your dashboard, click **New +** and select **Web Service**.
+    - Connect your GitHub account and select the API repository you just created.
+    - Give your service a unique name. Render will automatically detect it's a Node.js app and fill in the settings:
+      - **Build Command**: `npm install`
+      - **Start Command**: `npm start`
+    - Scroll down and click **Create Web Service**.
+    - Render will build and deploy your API. After a minute or two, you will get a live URL at the top of the page (e.g., `https://your-api-name.onrender.com`). **Copy this URL.**
+
+---
+
+### Part 2: Frontend Setup & Deployment
+
+Now that you have a live API URL, you can configure and deploy the frontend.
+
+#### A. Connecting the Frontend to Your Live API
 
 1.  **Locate the API Endpoints**:
-    Open the following files in your code editor:
+    Open the following frontend files in your code editor:
     - `App.tsx`
     - `components/AdminDashboard.tsx`
 
@@ -40,76 +68,47 @@ This application can send training reports to your own backend server. To connec
     ```
 
 3.  **Replace the URL**:
-    Change the placeholder URL to your own live backend endpoint. For example:
+    Change the placeholder URL to your own live backend URL from Render, making sure to add `/api/reports` at the end. For example:
     ```javascript
-    const API_BASE = 'https://your-company-api.com/api/training-reports';
+    const API_BASE = 'https://your-api-name.onrender.com/api/reports';
     ```
 
-4.  **Save the files**. Your application will now send and fetch reports from your specified backend. If the API call fails, it will automatically fall back to using the browser's local storage.
+4.  **Save the files**. Your frontend is now configured to communicate with your live backend.
+
+#### B. How to Deploy the Frontend to a Live Server
+
+1.  **Create a GitHub Repository for the Frontend**:
+    - Create another **new, separate** repository on GitHub (e.g., `it-security-frontend`).
+    - Upload all the frontend files and folders (`index.html`, `App.tsx`, `components/`, etc.) to this repository.
+
+2.  **Deploy on Vercel (Recommended)**:
+    - Sign up for a free account at [vercel.com](https://vercel.com).
+    - Connect your GitHub account and import the frontend repository.
+    - Vercel will automatically detect it's a static site and deploy it. **No configuration is needed.**
+    - You will be given a live URL for your training application.
 
 ---
 
-## 2. How to Deploy to a Live Server
+### Part 3: Workflow for Updating Quiz Questions
 
-You can host this application for free using modern static hosting platforms.
-
-### Step 1: Create a GitHub Repository
-
-1.  Create a new repository on your GitHub account.
-2.  Upload all the project files (`index.html`, `App.tsx`, etc.) to this new repository.
-
-### Step 2: Deploy
-
-**Option A: Vercel (Recommended)**
-1.  Sign up for a free account at [vercel.com](https://vercel.com).
-2.  Connect your GitHub account.
-3.  Import the repository you just created.
-4.  Vercel will automatically detect that it's a static site and deploy it. **No configuration is needed.**
-5.  You will be given a live URL (e.g., `https://<project-name>.vercel.app`). Vercel will also automatically re-deploy your site every time you push a change to your GitHub repository.
-
-**Option B: GitHub Pages**
-1.  In your repository on GitHub, go to the **Settings** tab.
-2.  In the left sidebar, click on **Pages**.
-3.  Under the "Build and deployment" section, for the **Source**, select **Deploy from a branch**.
-4.  For the **Branch**, select `main` (or `master`) and keep the folder as `/ (root)`.
-5.  Click **Save**.
-6.  You will get a live URL (e.g., `https://<your-username>.github.io/<your-repository-name>/`). It may take a few minutes for the site to become active.
-
----
-
-## 3. Workflow: How to Update the Live Quiz Questions
-
-Because this application is a **static site** (it doesn't have a live database), updating the quiz questions for all users requires a simple code update. The Admin Panel is a powerful tool to help you with this.
-
-**Follow this process carefully:**
+To update the quiz questions for all users, you must update the source code. The Admin Panel helps you generate the new code easily.
 
 1.  **Access the Admin Panel**:
-    - Go to your live application's URL and add `?page=admin` at the end.
+    - Go to your live application URL and add `?page=admin` at the end.
     - Example: `https://your-site.vercel.app/?page=admin`
     - Log in with your admin credentials (default Super Admin is `superadmin` / `dq.adm`).
 
-2.  **Add Your New Questions**:
-    - Navigate to the **Question Management** tab.
-    - Use the "Add New Question" form to add all the questions you need for each category. The list on the page will update in real-time, but these changes are **only in your browser session** for now.
+2.  **Add New Questions**:
+    - Go to the **Question Management** tab and use the form to add your new questions.
 
 3.  **Export the Updated Data**:
-    - Once you've added all your new questions, click the **Export to JSON** button.
-    - This will download a file named `quizzes.json`. This file contains all the original questions plus all the new ones you just added.
+    - Click the **Export to JSON** button to download a `quizzes.json` file.
 
 4.  **Update the Source Code**:
-    - Open the `quizzes.json` file you just downloaded in a text editor (like VS Code, Notepad, etc.).
-    - Select all the text and **copy** it.
-    - In your local project's source code, open the **`constants.ts`** file.
-    - Inside this file, find the `export const QUIZZES: Quiz[] = [...]` array.
-    - **Delete everything** inside the square brackets `[...]` and **paste the new content** you copied from `quizzes.json`.
+    - Open the downloaded `quizzes.json` file and copy its entire content.
+    - In your local frontend project, open the **`constants.ts`** file.
+    - Delete everything inside the `export const QUIZZES: Quiz[] = [...]` array and paste the new content.
 
-5.  **Commit and Push Your Changes**:
-    - Save the updated `constants.ts` file.
-    - Commit this change to your GitHub repository and push it. If you're using the command line:
-    ```bash
-    git add constants.ts
-    git commit -m "Update quiz questions"
-    git push
-    ```
-
-6.  **Done!**: Your hosting provider (Vercel or GitHub Pages) will automatically start a new deployment. Within a few minutes, the live application will be serving the new, updated set of quiz questions to all users.
+5.  **Commit and Push**:
+    - Save the `constants.ts` file.
+    - Commit and push this change to your frontend GitHub repository. Vercel will automatically re-deploy your site with the updated questions.

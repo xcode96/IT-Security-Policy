@@ -185,33 +185,36 @@ const App: React.FC = () => {
     setView('report');
   }, []);
 
-  const handleSubmitReport = useCallback(async (reportData: TrainingReport) => {
-    const API_BASE = 'https://it-security-policy.vercel.app';
+  const handleSubmitReport = useCallback(async (reportData: TrainingReport): Promise<boolean> => {
+    const API_BASE = 'https://iso27001-pnrp.onrender.com/api/reports';
     try {
         const response = await fetch(API_BASE, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(reportData),
         });
-        if (!response.ok) throw new Error('Network response was not ok');
-    } catch (error) {
-        console.error("Failed to submit report to server, saving locally:", error);
-        const savedReportsRaw = localStorage.getItem('trainingReports');
-        const savedReports: TrainingReport[] = savedReportsRaw ? JSON.parse(savedReportsRaw) : [];
-        savedReports.push(reportData);
-        localStorage.setItem('trainingReports', JSON.stringify(savedReports));
-    }
-    
-    setFinalOverallResult(reportData.overallResult);
+        if (!response.ok) {
+          throw new Error(`Network response was not ok: ${response.statusText}`);
+        }
 
-    if (user) {
-        const updatedUsers = users.map(u => 
-            u.username.toLowerCase() === user.username.toLowerCase() ? { ...u, status: 'expired' as const } : u
-        );
-        setUsers(updatedUsers);
-        localStorage.setItem('app_users', JSON.stringify(updatedUsers));
+        // --- SUCCESS PATH ---
+        setFinalOverallResult(reportData.overallResult);
+
+        if (user) {
+            const updatedUsers = users.map(u => 
+                u.username.toLowerCase() === user.username.toLowerCase() ? { ...u, status: 'expired' as const } : u
+            );
+            setUsers(updatedUsers);
+            localStorage.setItem('app_users', JSON.stringify(updatedUsers));
+        }
+        setView('post_submission');
+        return true;
+
+    } catch (error) {
+        console.error("Failed to submit report to server:", error);
+        alert("There was an unexpected error submitting your report. Please check your internet connection and try again.");
+        return false;
     }
-    setView('post_submission');
   }, [user, users]);
 
   const handleRestartTraining = useCallback(() => {
