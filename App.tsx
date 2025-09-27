@@ -8,30 +8,9 @@ import UserLogin from './components/UserInfo';
 import ReportCard from './components/ReportCard';
 import AdminLogin from './components/AdminLogin';
 import AdminPanel from './components/AdminPanel';
+import PostSubmissionCard from './components/PostSubmissionCard';
 
-type View = 'user_login' | 'quiz_hub' | 'quiz_running' | 'quiz_finished' | 'report' | 'submission_successful';
-
-const SubmissionSuccess: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            onLogout();
-        }, 3000); // Auto-logout after 3 seconds
-        return () => clearTimeout(timer);
-    }, [onLogout]);
-
-    return (
-        <div className="p-6 md:p-12 animate-fade-in text-center">
-             <div className="flex justify-center mb-6">
-                <svg className="w-16 h-16 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-            </div>
-            <h2 className="text-3xl font-bold text-slate-100 mb-2">Submission Successful</h2>
-            <p className="text-slate-400">Your report has been sent to the administrator. You will be logged out shortly.</p>
-        </div>
-    );
-};
-
+type View = 'user_login' | 'quiz_hub' | 'quiz_running' | 'quiz_finished' | 'report' | 'post_submission';
 
 const App: React.FC = () => {
   const [view, setView] = useState<View>('user_login');
@@ -39,6 +18,7 @@ const App: React.FC = () => {
   const [quizzes, setQuizzes] = useState<Quiz[]>(INITIAL_QUIZZES);
   const [users, setUsers] = useState<User[]>([]);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [finalOverallResult, setFinalOverallResult] = useState<boolean | null>(null);
 
   // Effect to load and sanitize user data from localStorage on initial load.
   // This ensures data integrity and handles cases of corrupted or outdated data from previous sessions.
@@ -108,14 +88,16 @@ const App: React.FC = () => {
         return { success: false, message: 'Invalid Employee ID or password.' };
       }
       if (userFound.status === 'expired') {
-        return { success: false, message: 'This account has already completed the training and is inactive.' };
+        return { success: false, message: 'This account has already completed the training and is inactive. Please contact an administrator for a retake.' };
       }
       setUser({ fullName: userFound.fullName, username: userFound.username });
       setView('quiz_hub');
+      // Reset progress for the new session
+      setQuizProgress(initialProgress);
       return { success: true, message: '' };
     }
     return { success: false, message: 'Invalid Employee ID or password.' };
-  }, [users]);
+  }, [users, initialProgress]);
 
 
   const handleStartQuiz = useCallback((quizId: string) => {
@@ -200,6 +182,8 @@ const App: React.FC = () => {
         localStorage.setItem('trainingReports', JSON.stringify(savedReports));
     }
     
+    setFinalOverallResult(reportData.overallResult);
+
     // Expire user after submission
     if (user) {
         const updatedUsers = users.map(u => 
@@ -208,7 +192,7 @@ const App: React.FC = () => {
         setUsers(updatedUsers);
         localStorage.setItem('app_users', JSON.stringify(updatedUsers));
     }
-    setView('submission_successful');
+    setView('post_submission');
   }, [user, users]);
 
   const handleRestartTraining = useCallback(() => {
@@ -216,8 +200,17 @@ const App: React.FC = () => {
     setUser(null);
     setActiveQuizId(null);
     setCurrentQuestionIndex(0);
+    setFinalOverallResult(null);
     setView('user_login');
   }, [initialProgress]);
+  
+  const handleUpdateRequestStatus = (username: string, status: 'active' | 'expired') => {
+    const updatedUsers = users.map(u => 
+        u.username.toLowerCase() === username.toLowerCase() ? { ...u, status } : u
+    );
+    setUsers(updatedUsers);
+    localStorage.setItem('app_users', JSON.stringify(updatedUsers));
+  };
 
   const handleAddQuestion = (quizId: string, question: Omit<Question, 'id'>) => {
     setQuizzes(prevQuizzes => {
@@ -278,6 +271,7 @@ const App: React.FC = () => {
               onDeleteUser={handleDeleteUser}
               onAddQuestion={handleAddQuestion}
               onImportQuizzes={handleImportQuizzes}
+              onUpdateRequestStatus={handleUpdateRequestStatus}
            />;
   }
 
@@ -328,8 +322,9 @@ const App: React.FC = () => {
             onSubmitReport={handleSubmitReport}
           />
         );
-      case 'submission_successful':
-        return <SubmissionSuccess onLogout={handleRestartTraining} />;
+      case 'post_submission':
+        if (finalOverallResult === null) return null;
+        return <PostSubmissionCard user={user} overallResult={finalOverallResult} onLogout={handleRestartTraining} />;
       default:
         return null;
     }
@@ -379,7 +374,7 @@ const App: React.FC = () => {
   }
   
   // Special layout for report submission and success screen (no header)
-  if (view === 'report' || view === 'submission_successful') {
+  if (view === 'report' || view === 'post_submission') {
     return (
        <div className="min-h-screen w-full font-sans bg-slate-900 flex items-center justify-center p-4">
          <main className="w-full max-w-2xl">

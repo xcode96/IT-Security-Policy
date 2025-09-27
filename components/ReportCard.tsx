@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { QuizProgress, TrainingReport, Quiz } from '../types';
+import { PASSING_PERCENTAGE } from '../constants';
 
 interface ReportCardProps {
   user: { fullName: string, username: string };
@@ -13,7 +14,6 @@ const ReportCard: React.FC<ReportCardProps> = ({ user, quizProgress, quizzes, on
   const overallResult = useMemo(() => {
     let totalScore = 0;
     let totalQuestions = 0;
-    const PASSING_PERCENTAGE = 70;
 
     const allCompleted = quizzes.every(quiz => quizProgress[quiz.id]?.status === 'completed');
     if (!allCompleted) return false;

@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { TrainingReport } from '../types';
-import { QUIZZES } from '../constants';
+import { QUIZZES, PASSING_PERCENTAGE } from '../constants';
 import Certificate from './Certificate';
-
-const PASSING_PERCENTAGE = 70;
 
 const AdminDashboard: React.FC = () => {
     const [reports, setReports] = useState<TrainingReport[]>([]);
@@ -11,6 +9,7 @@ const AdminDashboard: React.FC = () => {
     const [copiedReportId, setCopiedReportId] = useState<string | null>(null);
     const [viewingCertificateFor, setViewingCertificateFor] = useState<TrainingReport | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [filterStatus, setFilterStatus] = useState<'all' | 'passed' | 'failed'>('all');
 
     const API_BASE = 'https://iso27001-pnrp.onrender.com/api/reports';
 
@@ -31,14 +30,91 @@ const AdminDashboard: React.FC = () => {
         fetchReports();
     }, []);
 
+    const stats = useMemo(() => {
+        const total = reports.length;
+        if (total === 0) {
+            return {
+                totalSubmissions: 0,
+                passed: 0,
+                failed: 0,
+                passRate: 0,
+            };
+        }
+        const passedCount = reports.filter(r => r.overallResult).length;
+        const failedCount = total - passedCount;
+        const passRate = Math.round((passedCount / total) * 100);
+
+        return { totalSubmissions: total, passed: passedCount, failed: failedCount, passRate };
+    }, [reports]);
+
     const filteredReports = useMemo(() => {
         const term = searchTerm.toLowerCase().trim();
-        if (!term) return reports;
-        return reports.filter(report =>
-            report.user.fullName.toLowerCase().includes(term) ||
-            report.user.username.toLowerCase().includes(term)
-        );
-    }, [reports, searchTerm]);
+        let results = reports;
+
+        // Apply search filter
+        if (term) {
+            results = results.filter(report =>
+                report.user.fullName.toLowerCase().includes(term) ||
+                report.user.username.toLowerCase().includes(term)
+            );
+        }
+        
+        // Apply status filter
+        if (filterStatus === 'passed') {
+            return results.filter(report => report.overallResult);
+        }
+        if (filterStatus === 'failed') {
+            return results.filter(report => !report.overallResult);
+        }
+        
+        return results;
+    }, [reports, searchTerm, filterStatus]);
+
+    const handleExportToExcel = () => {
+        if (filteredReports.length === 0) {
+            alert("There are no reports to export in the current view.");
+            return;
+        }
+
+        const headers = ['User Name', 'Employee ID', 'Status'];
+
+        // Function to escape CSV fields if they contain commas, quotes, or newlines
+        const escapeCsvField = (field: string | null | undefined): string => {
+            if (field === null || field === undefined) {
+                return '';
+            }
+            const stringField = String(field);
+            // Enclose in double quotes and escape existing double quotes
+            if (stringField.includes(',') || stringField.includes('"') || stringField.includes('\n')) {
+                return `"${stringField.replace(/"/g, '""')}"`;
+            }
+            return stringField;
+        };
+
+        const csvRows = [
+            headers.join(','), // Header row
+            ...filteredReports.map(report => [
+                escapeCsvField(report.user.fullName),
+                escapeCsvField(report.user.username),
+                report.overallResult ? 'Pass' : 'Fail'
+            ].join(','))
+        ];
+
+        const csvContent = csvRows.join('\r\n');
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        if (link.download !== undefined) { // feature detection
+            const url = URL.createObjectURL(blob);
+            const date = new Date().toISOString().split('T')[0];
+            link.setAttribute("href", url);
+            link.setAttribute("download", `user_reports_${date}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    };
 
     const handleClearReports = async () => {
         if (window.confirm("Are you sure you want to clear all submitted reports? This action cannot be undone.")) {
@@ -134,9 +210,44 @@ const AdminDashboard: React.FC = () => {
 
     return (
         <div className="animate-fade-in">
+            {/* Dashboard Stats */}
+            <div className="mb-8">
+                <h3 className="text-xl font-bold text-slate-100 mb-4">Training Overview</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                        <p className="text-sm font-medium text-slate-400">Total Submissions</p>
+                        <p className="text-3xl font-bold text-white mt-1">{stats.totalSubmissions}</p>
+                    </div>
+                    <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                        <p className="text-sm font-medium text-slate-400">Pass Rate</p>
+                        <p className="text-3xl font-bold text-blue-400 mt-1">{stats.passRate}%</p>
+                    </div>
+                    <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                        <p className="text-sm font-medium text-slate-400">Passed</p>
+                        <p className="text-3xl font-bold text-green-400 mt-1">{stats.passed}</p>
+                    </div>
+                    <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                        <p className="text-sm font-medium text-slate-400">Failed</p>
+                        <p className="text-3xl font-bold text-red-400 mt-1">{stats.failed}</p>
+                    </div>
+                </div>
+            </div>
+
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6 border-b border-slate-700 pb-4">
                  <div>
-                    <h3 className="text-xl font-bold text-slate-100">All Reports ({filteredReports.length})</h3>
+                    <h3 className="text-xl font-bold text-slate-100">Individual Reports ({filteredReports.length})</h3>
+                    <div className="flex items-center gap-2 mt-3">
+                        <span className="text-sm font-medium text-slate-400 mr-2">Filter by:</span>
+                        <button onClick={() => setFilterStatus('all')} className={`px-4 py-1.5 text-sm font-bold rounded-md transition-colors duration-200 ${filterStatus === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-700 hover:bg-slate-600 text-slate-300'}`}>
+                            All
+                        </button>
+                        <button onClick={() => setFilterStatus('passed')} className={`px-4 py-1.5 text-sm font-bold rounded-md transition-colors duration-200 ${filterStatus === 'passed' ? 'bg-green-500 text-white' : 'bg-slate-700 hover:bg-slate-600 text-slate-300'}`}>
+                            Passed
+                        </button>
+                        <button onClick={() => setFilterStatus('failed')} className={`px-4 py-1.5 text-sm font-bold rounded-md transition-colors duration-200 ${filterStatus === 'failed' ? 'bg-red-500 text-white' : 'bg-slate-700 hover:bg-slate-600 text-slate-300'}`}>
+                            Failed
+                        </button>
+                    </div>
                 </div>
                 <div className="flex items-center gap-4 w-full md:w-auto">
                     <input
@@ -146,6 +257,10 @@ const AdminDashboard: React.FC = () => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full md:w-64 p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
                     />
+                    <button onClick={handleExportToExcel} disabled={filteredReports.length === 0} className="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white font-semibold rounded-lg text-sm transition-colors duration-200 disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed flex-shrink-0 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path d="M10.75 2.75a.75.75 0 00-1.5 0v8.614L6.295 8.235a.75.75 0 10-1.09 1.03l4.25 4.5a.75.75 0 001.09 0l4.25-4.5a.75.75 0 00-1.09-1.03l-2.955 3.129V2.75z" /><path d="M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z" /></svg>
+                        Export
+                    </button>
                     <button onClick={handleClearReports} disabled={reports.length === 0} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-sm transition-colors duration-200 disabled:bg-slate-600 disabled:cursor-not-allowed flex-shrink-0">
                         Clear All
                     </button>

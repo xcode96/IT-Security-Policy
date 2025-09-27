@@ -42,6 +42,12 @@ export interface User {
   status: 'active' | 'expired';
 }
 
+export interface RetakeRequest {
+  username: string;
+  fullName: string;
+  requestDate: string;
+}
+
 export interface AdminPanelProps {
     quizzes: Quiz[];
     users: User[];
@@ -49,4 +55,5 @@ export interface AdminPanelProps {
     onDeleteUser: (username: string) => void;
     onAddQuestion: (quizId: string, question: Omit<Question, 'id'>) => void;
     onImportQuizzes: (quizzes: Quiz[]) => void;
+    onUpdateRequestStatus: (username: string, status: 'active' | 'expired') => void;
 }

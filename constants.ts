@@ -1,5 +1,7 @@
 import { Quiz } from './types';
 
+export const PASSING_PERCENTAGE = 70;
+
 export const QUIZZES: Quiz[] = [
   {
     id: 'password_security',
