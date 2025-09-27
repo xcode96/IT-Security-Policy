@@ -33,7 +33,7 @@ const TopicIcon: React.FC<TopicIconProps> = ({ categoryId }) => {
   };
 
   return (
-    <div className="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-lg text-blue-600">
+    <div className="w-12 h-12 flex items-center justify-center bg-indigo-100 rounded-lg text-indigo-600">
       {renderIcon()}
     </div>
   );

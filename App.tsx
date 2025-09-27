@@ -21,14 +21,36 @@ const App: React.FC = () => {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
 
   useEffect(() => {
-    const savedUsersRaw = localStorage.getItem('app_users');
-    let savedUsers: User[] = savedUsersRaw ? JSON.parse(savedUsersRaw) : [];
+    let savedUsers: User[] = [];
+    try {
+        const savedUsersRaw = localStorage.getItem('app_users');
+        if (savedUsersRaw) {
+            const parsedData = JSON.parse(savedUsersRaw);
+            if (Array.isArray(parsedData)) {
+                savedUsers = parsedData;
+            }
+        }
+    } catch (error) {
+        console.error("Could not parse users from localStorage. Resetting.", error);
+        localStorage.removeItem('app_users'); // Clear corrupted data
+    }
+
+    // Sanitize all loaded users to ensure data integrity from previous sessions
+    savedUsers = savedUsers.map(u => ({ 
+        ...u, 
+        username: u.username ? u.username.trim() : '',
+        fullName: u.fullName ? u.fullName.trim() : '',
+        status: u.status || 'active' 
+    })).filter(u => u.username); // Remove any users that became invalid after trim
 
     const defaultUserExists = savedUsers.some(u => u.username === 'main');
     if (!defaultUserExists) {
-        savedUsers.push({ fullName: 'Main User', username: 'main', password: 'Cat' });
-        localStorage.setItem('app_users', JSON.stringify(savedUsers));
+        savedUsers.push({ fullName: 'Main User', username: 'main', password: 'Cat', status: 'active' });
     }
+    
+    savedUsers = savedUsers.filter(u => u.username !== 'sso.user');
+
+    localStorage.setItem('app_users', JSON.stringify(savedUsers));
     setUsers(savedUsers);
   }, []);
 
@@ -54,15 +76,23 @@ const App: React.FC = () => {
     return false;
   };
   
-  const handleUserLogin = useCallback((username: string, password: string): boolean => {
-    const userFound = users.find(u => u.username === username && u.password === password);
+  const handleUserLogin = useCallback((username: string, password: string): { success: boolean, message: string } => {
+    const cleanUsername = username.trim(); // Sanitize input here
+    const userFound = users.find(u => u.username === cleanUsername);
     if (userFound) {
-        setUser({ fullName: userFound.fullName, username: userFound.username });
-        setView('quiz_hub');
-        return true;
+      if (userFound.password !== password) {
+        return { success: false, message: 'Invalid Employee ID or password.' };
+      }
+      if (userFound.status === 'expired') {
+        return { success: false, message: 'This account has already completed the training and is inactive.' };
+      }
+      setUser({ fullName: userFound.fullName, username: userFound.username });
+      setView('quiz_hub');
+      return { success: true, message: '' };
     }
-    return false;
+    return { success: false, message: 'Invalid Employee ID or password.' };
   }, [users]);
+
 
   const handleStartQuiz = useCallback((quizId: string) => {
     setQuizProgress(prev => ({
@@ -148,7 +178,17 @@ const App: React.FC = () => {
         savedReports.push(reportData);
         localStorage.setItem('trainingReports', JSON.stringify(savedReports));
     }
-  }, []);
+    
+    // Expire user after submission
+    if (user) {
+        const updatedUsers = users.map(u => 
+            u.username === user.username ? { ...u, status: 'expired' as const } : u
+        );
+        setUsers(updatedUsers);
+        localStorage.setItem('app_users', JSON.stringify(updatedUsers));
+    }
+
+  }, [user, users]);
 
   const handleRestartTraining = useCallback(() => {
     setQuizProgress(initialProgress);
@@ -173,28 +213,39 @@ const App: React.FC = () => {
     });
   };
   
-  const handleAddUser = (newUser: User) => {
-    if (users.some(u => u.username === newUser.username)) {
-        alert('Username already exists.');
-        return;
+  const handleAddUser = (newUser: Omit<User, 'status'>): boolean => {
+    const cleanUser = {
+        fullName: newUser.fullName.trim(),
+        username: newUser.username.trim(),
+        password: newUser.password,
+    };
+
+    if (users.some(u => u.username === cleanUser.username)) {
+        alert('Employee ID already exists.');
+        return false;
     }
-    const updatedUsers = [...users, newUser];
+    
+    const userToAdd: User = {
+        ...cleanUser,
+        status: 'active',
+    };
+
+    const updatedUsers = [...users, userToAdd];
     setUsers(updatedUsers);
     localStorage.setItem('app_users', JSON.stringify(updatedUsers));
-    alert('User added successfully!');
+    
+    return true;
   };
 
   const handleDeleteUser = (usernameToDelete: string) => {
     if (usernameToDelete === 'main') {
-        alert("The default 'main' user cannot be deleted.");
+        alert("Default system users cannot be deleted.");
         return;
     }
-    if (window.confirm(`Are you sure you want to delete the user "${usernameToDelete}"?`)) {
-        const updatedUsers = users.filter(user => user.username !== usernameToDelete);
-        setUsers(updatedUsers);
-        localStorage.setItem('app_users', JSON.stringify(updatedUsers));
-        alert('User deleted successfully!');
-    }
+    const updatedUsers = users.filter(user => user.username !== usernameToDelete);
+    setUsers(updatedUsers);
+    localStorage.setItem('app_users', JSON.stringify(updatedUsers));
+    alert('User deleted successfully!');
   };
 
   const handleImportQuizzes = (newQuizzes: Quiz[]) => {
@@ -234,7 +285,18 @@ const App: React.FC = () => {
                 />;
       case 'quiz_running':
         if (!activeQuiz || activeQuiz.questions.length === 0) {
-          return <div className="p-8 text-center">There was an unexpected error. Finish what you were doing.</div>;
+          return (
+            <div className="p-8 text-center animate-fade-in">
+                <h2 className="text-2xl font-bold text-slate-900 mb-2">Error Loading Quiz</h2>
+                <p className="text-slate-500 mb-6">The selected quiz could not be found. Please return to the dashboard and try again.</p>
+                <button 
+                    onClick={handleReturnToHub} 
+                    className="px-8 py-3 bg-slate-700 hover:bg-slate-800 text-white font-bold rounded-lg transition-transform duration-200 transform hover:scale-105"
+                >
+                    Return to Dashboard
+                </button>
+            </div>
+          );
         }
         return (
           <div className="p-6 md:p-8">
@@ -265,7 +327,7 @@ const App: React.FC = () => {
   };
   
   const getHeaderText = () => {
-    if(view === 'user_login') return 'IT Security Policy Login';
+    if(view === 'user_login') return 'IT Security Policy';
     if(view === 'quiz_hub') return 'Training Dashboard';
     if(view === 'report') return 'Training Completion Report';
     if(activeQuiz) return activeQuiz.name;
@@ -273,21 +335,23 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4 font-sans">
-      <div className="w-full max-w-2xl mx-auto">
-        <header className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-gradient mb-2 tracking-tight">{getHeaderText()}</h1>
-          <p className="text-lg text-gray-500">
+    <div className="min-h-screen w-full font-sans">
+      <header className="w-full pt-12 pb-8 px-4">
+        <div className="text-center">
+          <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-3 tracking-tight">{getHeaderText()}</h1>
+          <p className="text-md text-slate-500 max-w-2xl mx-auto">
              {view === 'user_login' && 'Please log in to begin your mandatory security assessment.'}
              {view === 'quiz_hub' && 'Complete all quizzes to generate your report.'}
              {view === 'report' && 'Submit your report to complete the training.'}
              {view === 'quiz_running' && 'Test your knowledge on essential security practices.'}
           </p>
-        </header>
-        <main className="bg-white rounded-2xl shadow-lg border border-gray-200 transition-all duration-500 min-h-[450px] flex flex-col justify-center">
+        </div>
+      </header>
+      <main className="w-full max-w-4xl mx-auto px-4 pb-12">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 transition-all duration-500 min-h-[450px] flex flex-col justify-center overflow-hidden">
           {renderContent()}
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
 };

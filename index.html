@@ -21,15 +21,25 @@
     <style>
       body {
         font-family: 'Inter', sans-serif;
+        background-color: #f8fafc; /* Tailwind slate-50 */
       }
-      .text-gradient {
-        background: linear-gradient(to right, #3b82f6, #1d4ed8);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+      /* Custom scrollbar for a better light mode experience */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #e2e8f0; 
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #94a3b8;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #64748b;
       }
     </style>
   </head>
-  <body class="bg-gray-100 text-gray-800">
+  <body class="text-slate-800">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

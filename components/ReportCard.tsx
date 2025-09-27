@@ -15,12 +15,27 @@ const ReportCard: React.FC<ReportCardProps> = ({ user, quizProgress, quizzes, on
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   const overallResult = useMemo(() => {
-    return quizzes.every(quiz => {
+    let totalScore = 0;
+    let totalQuestions = 0;
+
+    // Ensure all quizzes have been completed before calculating
+    const allCompleted = quizzes.every(quiz => quizProgress[quiz.id]?.status === 'completed');
+    if (!allCompleted) {
+        return false;
+    }
+
+    quizzes.forEach(quiz => {
       const progress = quizProgress[quiz.id];
-      if (!progress || progress.status !== 'completed') return false;
-      const percentage = progress.total > 0 ? (progress.score / progress.total) * 100 : 0;
-      return percentage >= PASSING_PERCENTAGE;
+      if (progress) {
+        totalScore += progress.score;
+        totalQuestions += progress.total;
+      }
     });
+    
+    if (totalQuestions === 0) return false; // Avoid division by zero
+
+    const overallPercentage = (totalScore / totalQuestions) * 100;
+    return overallPercentage >= PASSING_PERCENTAGE;
   }, [quizProgress, quizzes]);
 
   const handleSubmit = () => {
@@ -41,38 +56,38 @@ const ReportCard: React.FC<ReportCardProps> = ({ user, quizProgress, quizzes, on
        {isSubmitted ? (
          <>
           <div className="flex justify-center mb-4">
-             <svg className="w-16 h-16 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+             <svg className="w-16 h-16 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
              </svg>
           </div>
-          <h2 className="text-3xl font-bold text-gray-800 mb-2">Report Submitted!</h2>
-          <p className="text-gray-600 text-lg mb-8">Thank you. The administrator has received your training report.</p>
+          <h2 className="text-3xl font-bold text-slate-900 mb-2">Report Submitted!</h2>
+          <p className="text-slate-500 text-lg mb-8">Thank you. The administrator has received your training report.</p>
           <button
             onClick={onRestart}
-            className="w-full mt-4 px-10 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-lg transition-transform duration-200 transform hover:scale-105 shadow-md"
+            className="w-full mt-4 px-10 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-lg transition-transform duration-200 transform hover:scale-105 shadow-lg shadow-indigo-500/20"
           >
-            Start New Training
+            Log Out
           </button>
          </>
        ) : (
          <>
             <div className="flex justify-center mb-4">
-                <svg className="w-16 h-16 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                <svg className="w-16 h-16 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
             </div>
-            <h2 className="text-3xl font-bold text-gray-800 mb-2">Training Complete</h2>
-            <p className="text-gray-600 text-lg mb-8">
+            <h2 className="text-3xl font-bold text-slate-900 mb-2">Training Complete</h2>
+            <p className="text-slate-500 text-lg mb-8">
                 You have completed all required quizzes. Please submit your report to the administrator.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <button
                     onClick={onRestart}
-                    className="w-full sm:w-auto px-6 py-3 bg-white border border-gray-300 hover:bg-gray-100 text-gray-800 font-bold rounded-lg transition-colors duration-200"
+                    className="w-full sm:w-auto px-6 py-3 bg-slate-200 border border-slate-300 hover:bg-slate-300 text-slate-800 font-bold rounded-lg transition-colors duration-200"
                 >
-                    Restart Training
+                    Log Out
                 </button>
                 <button
                     onClick={handleSubmit}
-                    className="w-full sm:flex-1 text-center px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-transform duration-200 transform hover:scale-105 shadow-md"
+                    className="w-full sm:flex-1 text-center px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-transform duration-200 transform hover:scale-105 shadow-md shadow-indigo-500/20"
                 >
                     Submit Report to Dashboard
                 </button>

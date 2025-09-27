@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { AdminPanelProps, Question, Quiz, User } from '../types';
+import { AdminPanelProps, Question, Quiz } from '../types';
 import AdminDashboard from './AdminDashboard';
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ quizzes, users, onAddUser, onDeleteUser, onAddQuestion, onImportQuizzes }) => {
@@ -17,9 +17,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ quizzes, users, onAddUser, onDe
     const [newUser, setNewUser] = useState({
         fullName: '',
         username: '',
-        password: ''
+        password: '',
     });
-
+    
     const handleNewUserChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setNewUser(prev => ({ ...prev, [name]: value }));
@@ -27,14 +27,24 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ quizzes, users, onAddUser, onDe
 
     const handleAddUserSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newUser.fullName.trim() || !newUser.username.trim() || !newUser.password.trim()) {
+        const { fullName, username, password } = newUser;
+
+        if (!fullName || !username || !password) {
             alert('Please fill out all user fields.');
             return;
         }
-        onAddUser(newUser);
-        setNewUser({ fullName: '', username: '', password: '' }); // Reset form
-    };
+        const success = onAddUser({
+            fullName,
+            username,
+            password
+        });
 
+        if (success) {
+            setNewUser({ fullName: '', username: '', password: '' }); // Reset form
+            alert('User added successfully!');
+        }
+    };
+    
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setNewQuestion(prev => ({ ...prev, [name]: value }));
@@ -111,25 +121,25 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ quizzes, users, onAddUser, onDe
         reader.readAsText(file);
     };
 
-    const commonInputClasses = "w-full p-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500";
+    const commonInputClasses = "w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors";
     
     return (
-        <div className="min-h-screen bg-gray-100 flex flex-col items-center p-4 font-sans">
-            <div className="w-full max-w-4xl mx-auto">
-                <header className="text-center mb-8">
-                    <h1 className="text-4xl md:text-5xl font-extrabold text-gradient mb-2 tracking-tight">Administrator Panel</h1>
-                    <p className="text-lg text-gray-500">Manage quizzes, users, and review reports.</p>
-                </header>
-                <main className="bg-white rounded-2xl shadow-lg border border-gray-200">
-                    <div className="border-b border-gray-200">
-                        <nav className="flex space-x-2 p-2" aria-label="Tabs">
-                            <button onClick={() => setActiveTab('reports')} className={`px-4 py-2 text-sm font-medium rounded-md ${activeTab === 'reports' ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:text-gray-700'}`}>
+        <div className="min-h-screen w-full font-sans text-slate-900">
+            <header className="w-full pt-12 pb-8 px-4 text-center">
+                <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-2 tracking-tight">Administrator Panel</h1>
+                <p className="text-lg text-slate-500">Manage quizzes, users, and review reports.</p>
+            </header>
+            <main className="w-full max-w-6xl mx-auto px-4 pb-12">
+                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200">
+                    <div className="border-b border-slate-200">
+                        <nav className="flex space-x-1 p-2" aria-label="Tabs">
+                            <button onClick={() => setActiveTab('reports')} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === 'reports' ? 'bg-indigo-100 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'}`}>
                                 User Reports
                             </button>
-                            <button onClick={() => setActiveTab('questions')} className={`px-4 py-2 text-sm font-medium rounded-md ${activeTab === 'questions' ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:text-gray-700'}`}>
+                            <button onClick={() => setActiveTab('questions')} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === 'questions' ? 'bg-indigo-100 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'}`}>
                                 Question Management
                             </button>
-                             <button onClick={() => setActiveTab('users')} className={`px-4 py-2 text-sm font-medium rounded-md ${activeTab === 'users' ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:text-gray-700'}`}>
+                             <button onClick={() => setActiveTab('users')} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === 'users' ? 'bg-indigo-100 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'}`}>
                                 User Management
                             </button>
                         </nav>
@@ -140,37 +150,44 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ quizzes, users, onAddUser, onDe
                         {activeTab === 'users' && (
                             <div className="animate-fade-in">
                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <div>
-                                        <h2 className="text-2xl font-bold mb-4 border-b pb-2">Add New User</h2>
+                                    <div className="bg-slate-50 p-6 rounded-lg border border-slate-200">
+                                        <h2 className="text-xl font-bold mb-4 border-b border-slate-200 pb-2 text-slate-900">Add New User</h2>
                                         <form onSubmit={handleAddUserSubmit} className="space-y-4">
                                             <div>
-                                                <label className="block text-sm font-medium text-gray-600 mb-1">Full Name</label>
+                                                <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
                                                 <input type="text" name="fullName" value={newUser.fullName} onChange={handleNewUserChange} className={commonInputClasses} placeholder="e.g., Jane Doe"/>
                                             </div>
                                              <div>
-                                                <label className="block text-sm font-medium text-gray-600 mb-1">Username</label>
-                                                <input type="text" name="username" value={newUser.username} onChange={handleNewUserChange} className={commonInputClasses} placeholder="e.g., jdoe"/>
+                                                <label className="block text-sm font-medium text-slate-700 mb-1">Employee ID</label>
+                                                <input type="text" name="username" value={newUser.username} onChange={handleNewUserChange} className={commonInputClasses} placeholder="e.g., jdoe99"/>
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium text-gray-600 mb-1">Password</label>
-                                                <input type="password" name="password" value={newUser.password} onChange={handleNewUserChange} className={commonInputClasses} placeholder="••••••••" />
+                                                <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                                                <input type="password" name="password" value={newUser.password} onChange={handleNewUserChange} className={commonInputClasses} placeholder="Set a temporary password"/>
                                             </div>
-                                            <button type="submit" className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors">Add User</button>
+                                            <button type="submit" className="w-full px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-colors">Add User</button>
                                         </form>
                                     </div>
                                     <div>
-                                         <h2 className="text-2xl font-bold mb-4 border-b pb-2">Existing Users ({users.length})</h2>
-                                         <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
+                                         <h2 className="text-xl font-bold mb-4 border-b border-slate-200 pb-2 text-slate-900">Existing Users ({users.length})</h2>
+                                         <div className="space-y-2 max-h-[26rem] overflow-y-auto pr-2">
                                             {users.map(user => (
-                                                <div key={user.username} className="bg-gray-50 p-3 rounded-lg border flex justify-between items-center">
+                                                <div key={user.username} className="bg-white p-3 rounded-lg border border-slate-200 flex justify-between items-center">
                                                     <div>
-                                                        <p className="font-semibold">{user.fullName}</p>
-                                                        <p className="text-sm text-gray-500">{user.username}</p>
+                                                        <p className="font-semibold text-slate-800">{user.fullName}</p>
+                                                        <p className="text-sm text-slate-500">ID: {user.username}</p>
+                                                        <p className={`text-xs font-bold mt-1 px-2 py-0.5 rounded-full inline-block ${user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-slate-200 text-slate-600'}`}>
+                                                            {user.status}
+                                                        </p>
                                                     </div>
                                                     {user.username !== 'main' && (
                                                         <button
-                                                            onClick={() => onDeleteUser(user.username)}
-                                                            className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-100 rounded-full transition-colors"
+                                                            onClick={() => {
+                                                                if (window.confirm(`Are you sure you want to delete the user "${user.username}"?`)) {
+                                                                    onDeleteUser(user.username);
+                                                                }
+                                                            }}
+                                                            className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-100 rounded-full transition-colors"
                                                             aria-label={`Delete user ${user.username}`}
                                                         >
                                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5">
@@ -189,48 +206,48 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ quizzes, users, onAddUser, onDe
                         {activeTab === 'questions' && (
                             <div className="animate-fade-in">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <div>
-                                        <h2 className="text-2xl font-bold mb-4 border-b pb-2">Add New Question</h2>
+                                    <div className="bg-slate-50 p-6 rounded-lg border border-slate-200">
+                                        <h2 className="text-xl font-bold mb-4 border-b border-slate-200 pb-2 text-slate-900">Add New Question</h2>
                                         <form onSubmit={handleAddQuestionSubmit} className="space-y-4">
                                             <div>
-                                                <label className="block text-sm font-medium text-gray-600 mb-1">Category</label>
+                                                <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
                                                 <select name="quizId" value={newQuestion.quizId} onChange={handleInputChange} className={commonInputClasses}>
                                                     {quizzes.map(quiz => <option key={quiz.id} value={quiz.id}>{quiz.name}</option>)}
                                                 </select>
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium text-gray-600 mb-1">Question Text</label>
+                                                <label className="block text-sm font-medium text-slate-700 mb-1">Question Text</label>
                                                 <textarea name="question" value={newQuestion.question} onChange={handleInputChange} rows={3} className={commonInputClasses} />
                                             </div>
                                             {newQuestion.options.map((option, index) => (
                                                  <div key={index}>
-                                                    <label className="block text-sm font-medium text-gray-600 mb-1">Option {index + 1}</label>
+                                                    <label className="block text-sm font-medium text-slate-700 mb-1">Option {index + 1}</label>
                                                     <input type="text" value={option} onChange={(e) => handleOptionChange(index, e.target.value)} className={commonInputClasses} />
                                                 </div>
                                             ))}
                                             <div>
-                                                <label className="block text-sm font-medium text-gray-600 mb-1">Correct Answer</label>
+                                                <label className="block text-sm font-medium text-slate-700 mb-1">Correct Answer</label>
                                                 <select name="correctAnswer" value={newQuestion.correctAnswer} onChange={handleInputChange} className={commonInputClasses}>
                                                     <option value="">Select the correct answer</option>
                                                     {newQuestion.options.filter(o => o.trim()).map(option => <option key={option} value={option}>{option}</option>)}
                                                 </select>
                                             </div>
-                                            <button type="submit" className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors">Add Question</button>
+                                            <button type="submit" className="w-full px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-colors">Add Question</button>
                                         </form>
                                     </div>
                                     <div>
-                                         <h2 className="text-2xl font-bold mb-4 border-b pb-2">Data Management</h2>
-                                         <div className="space-y-4 p-4 bg-gray-50 rounded-lg border">
+                                         <h2 className="text-xl font-bold mb-4 border-b border-slate-200 pb-2 text-slate-900">Data Management</h2>
+                                         <div className="space-y-4 p-6 bg-slate-50 rounded-lg border border-slate-200">
                                             <div>
-                                                <h3 className="font-semibold text-lg">Export Quizzes</h3>
-                                                <p className="text-sm text-gray-600 mb-2">Save the current set of all questions to a JSON file.</p>
+                                                <h3 className="font-semibold text-lg text-slate-800">Export Quizzes</h3>
+                                                <p className="text-sm text-slate-500 mb-2">Save the current set of all questions to a JSON file.</p>
                                                 <button onClick={handleExport} className="w-full px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg">Export to JSON</button>
                                             </div>
-                                            <div className="border-t pt-4">
-                                                <h3 className="font-semibold text-lg">Import Quizzes</h3>
-                                                <p className="text-sm text-gray-600 mb-2">Load questions from a JSON file. This will replace the current set of questions.</p>
+                                            <div className="border-t border-slate-200 pt-4">
+                                                <h3 className="font-semibold text-lg text-slate-800">Import Quizzes</h3>
+                                                <p className="text-sm text-slate-500 mb-2">Load questions from a JSON file. This will replace the current set of questions.</p>
                                                 <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".json" className="hidden" />
-                                                <button onClick={handleImportClick} className="w-full px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg">Import from JSON</button>
+                                                <button onClick={handleImportClick} className="w-full px-6 py-2 bg-slate-600 hover:bg-slate-700 text-white font-semibold rounded-lg">Import from JSON</button>
                                             </div>
                                          </div>
                                     </div>
@@ -238,8 +255,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ quizzes, users, onAddUser, onDe
                             </div>
                         )}
                     </div>
-                </main>
-            </div>
+                </div>
+            </main>
         </div>
     );
 };

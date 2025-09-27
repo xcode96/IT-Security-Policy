@@ -37,14 +37,15 @@ export interface TrainingReport {
 
 export interface User {
   fullName: string;
-  username: string;
-  password?: string;
+  username: string; // This is the Employee ID
+  password: string;
+  status: 'active' | 'expired';
 }
 
 export interface AdminPanelProps {
     quizzes: Quiz[];
     users: User[];
-    onAddUser: (user: User) => void;
+    onAddUser: (user: Omit<User, 'status'>) => boolean;
     onDeleteUser: (username: string) => void;
     onAddQuestion: (quizId: string, question: Omit<Question, 'id'>) => void;
     onImportQuizzes: (quizzes: Quiz[]) => void;
