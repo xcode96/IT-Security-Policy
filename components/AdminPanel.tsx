@@ -1,23 +1,27 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { AdminPanelProps, Question, Quiz, User, RetakeRequest, AdminUser, AdminRole } from '../types';
+import { useToast } from './ToastProvider';
 import AdminDashboard from './AdminDashboard';
 
 type Tab = 'reports' | 'requests' | 'users' | 'questions' | 'admins';
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ 
     quizzes, users, adminUsers, admin,
-    onAddUser, onDeleteUser, onAddQuestion, onImportQuizzes, onUpdateRequestStatus,
-    onAddAdmin, onDeleteAdmin 
+    onAddUser, onDeleteUser, onAddQuestion, onEditQuestion, onDeleteQuestion,
+    onImportQuizzes, onUpdateRequestStatus, onAddAdmin, onDeleteAdmin 
 }) => {
     const [activeTab, setActiveTab] = useState<Tab>('reports');
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const toast = useToast();
     
     // State for searches
     const [userSearch, setUserSearch] = useState('');
     const [retakeSearch, setRetakeSearch] = useState('');
     const [adminSearch, setAdminSearch] = useState('');
+    const [questionSearch, setQuestionSearch] = useState('');
     
     const [retakeRequests, setRetakeRequests] = useState<RetakeRequest[]>([]);
+    const [editingQuestion, setEditingQuestion] = useState<{ quizId: string; question: Question } | null>(null);
     
     const canEdit = admin.role === 'super' || admin.role === 'editor';
     const isSuperAdmin = admin.role === 'super';
@@ -35,6 +39,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     });
     const [newUser, setNewUser] = useState({ fullName: '', username: '', password: '' });
     const [newAdmin, setNewAdmin] = useState({ username: '', password: '', role: 'viewer' as AdminRole });
+    const [showUserPass, setShowUserPass] = useState(false);
+    const [showAdminPass, setShowAdminPass] = useState(false);
+
 
     const updateRetakeRequests = (updatedRequests: RetakeRequest[]) => {
         setRetakeRequests(updatedRequests);
@@ -53,7 +60,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
     const downloadCsv = (headers: string[], data: any[][], filename: string) => {
         if (data.length === 0) {
-            alert(`There is no data to export in the current view for ${filename}.`);
+            toast.info(`There is no data to export in the current view for ${filename}.`);
             return;
         }
         const csvRows = [
@@ -80,25 +87,32 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             Export
         </button>
     );
+    
+    const EyeIcon = ({ visible }: { visible: boolean }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+          {visible ? ( <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.243 4.243L6.228 6.228" /> ) : ( <><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.432 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></> )}
+        </svg>
+    );
 
-    const handleApproveRetake = (username: string) => {
-        onUpdateRequestStatus(username, 'active');
+    const handleApproveRetake = async (username: string) => {
+        await onUpdateRequestStatus(username, 'active');
         const updatedRequests = retakeRequests.filter(req => req.username !== username);
         updateRetakeRequests(updatedRequests);
-        alert(`User ${username} has been approved for a retake. Their account is now active.`);
+        toast.success(`User ${username} approved for a retake.`);
     };
 
     const handleDenyRetake = (username: string) => {
         if (window.confirm(`Are you sure you want to deny the retake request for "${username}"?`)) {
             const updatedRequests = retakeRequests.filter(req => req.username !== username);
             updateRetakeRequests(updatedRequests);
+            toast.info(`Retake request for ${username} denied.`);
         }
     };
     
     const handleAddUserSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         const { fullName, username, password } = newUser;
-        if (!fullName || !username || !password) { alert('Please fill out all user fields.'); return; }
+        if (!fullName || !username || !password) { toast.error('Please fill out all user fields.'); return; }
         const success = onAddUser({ fullName, username, password });
         if (success) setNewUser({ fullName: '', username: '', password: '' });
     };
@@ -106,20 +120,34 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     const handleAddQuestionSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         const { quizId, question, options, correctAnswer } = newQuestion;
-        if (!quizId || !question || options.some(o => !o.trim()) || !correctAnswer) { alert("Please fill out all fields."); return; }
+        if (!quizId || !question || options.some(o => !o.trim()) || !correctAnswer) { toast.error("Please fill out all fields."); return; }
         const selectedQuiz = quizzes.find(q => q.id === quizId);
-        if (!selectedQuiz) { alert("Selected quiz category not found."); return; }
+        if (!selectedQuiz) { toast.error("Selected quiz category not found."); return; }
         const questionToAdd: Omit<Question, 'id'> = { category: selectedQuiz.name, question, options, correctAnswer };
         onAddQuestion(quizId, questionToAdd);
         setNewQuestion({ quizId: quizId, question: '', options: ['', '', '', ''], correctAnswer: '' });
-        alert("Question added successfully!");
+        toast.success("Question added successfully!");
     };
 
     const handleAddAdminSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newAdmin.username || !newAdmin.password) { alert('Please fill out all admin fields.'); return; }
+        if (!newAdmin.username || !newAdmin.password) { toast.error('Please fill out all admin fields.'); return; }
         const success = onAddAdmin(newAdmin);
         if (success) setNewAdmin({ username: '', password: '', role: 'viewer' });
+    };
+
+    const handleEditQuestionSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingQuestion) return;
+        
+        const { quizId, question } = editingQuestion;
+        if (!question.question || question.options.some(o => !o.trim()) || !question.correctAnswer) {
+            toast.error("Please fill out all fields.");
+            return;
+        }
+        onEditQuestion(quizId, question);
+        toast.success("Question updated successfully!");
+        setEditingQuestion(null);
     };
     
     const handleExport = () => {
@@ -141,11 +169,24 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 onImportQuizzes(JSON.parse(text));
             } catch (error) {
                 console.error("Failed to import quizzes:", error);
-                alert("Failed to import quizzes. Please check the file format.");
+                toast.error("Failed to import quizzes. Check file format.");
             }
         };
         reader.readAsText(file);
     };
+
+    const allQuestions = useMemo(() => {
+        return quizzes.flatMap(quiz => quiz.questions.map(question => ({ ...question, quizId: quiz.id, quizName: quiz.name })));
+    }, [quizzes]);
+
+    const filteredQuestions = useMemo(() => {
+        const searchTerm = questionSearch.toLowerCase().trim();
+        if (!searchTerm) return allQuestions;
+        return allQuestions.filter(q => 
+            q.question.toLowerCase().includes(searchTerm) ||
+            q.category.toLowerCase().includes(searchTerm)
+        );
+    }, [allQuestions, questionSearch]);
 
     const filteredRetakeRequests = useMemo(() => {
         const searchTerm = retakeSearch.toLowerCase().trim();
@@ -185,6 +226,34 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
     return (
         <div className="flex min-h-screen w-full font-sans bg-slate-900 text-slate-200">
+            {/* Edit Question Modal */}
+            {editingQuestion && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in" onClick={() => setEditingQuestion(null)}>
+                    <div className="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-2xl shadow-xl" onClick={(e) => e.stopPropagation()}>
+                        <form onSubmit={handleEditQuestionSubmit} className="space-y-4">
+                            <div className="p-6 border-b border-slate-700">
+                                <h3 className="text-xl font-bold text-slate-100">Edit Question</h3>
+                                <p className="text-sm text-slate-400">Category: {editingQuestion.question.category}</p>
+                            </div>
+                            <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+                                <div><label className="block text-sm font-medium text-slate-300 mb-1">Question Text</label><textarea value={editingQuestion.question.question} onChange={(e) => setEditingQuestion(p => p ? { ...p, question: { ...p.question, question: e.target.value } } : null)} rows={3} className={commonInputClasses} required /></div>
+                                {editingQuestion.question.options.map((option, index) => (
+                                    <div key={index}><label className="block text-sm font-medium text-slate-300 mb-1">Option {index + 1}</label><input type="text" value={option} onChange={(e) => {
+                                        const newOptions = [...editingQuestion.question.options]; newOptions[index] = e.target.value;
+                                        setEditingQuestion(p => p ? { ...p, question: { ...p.question, options: newOptions } } : null);
+                                    }} className={commonInputClasses} required /></div>
+                                ))}
+                                <div><label className="block text-sm font-medium text-slate-300 mb-1">Correct Answer</label><select value={editingQuestion.question.correctAnswer} onChange={(e) => setEditingQuestion(p => p ? { ...p, question: { ...p.question, correctAnswer: e.target.value } } : null)} className={commonInputClasses} required><option value="">Select the correct answer</option>{editingQuestion.question.options.filter(o => o.trim()).map(option => <option key={option} value={option}>{option}</option>)}</select></div>
+                            </div>
+                            <div className="p-6 border-t border-slate-700 flex justify-end gap-4 bg-slate-900/40 rounded-b-2xl">
+                                <button type="button" onClick={() => setEditingQuestion(null)} className="px-6 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-100 font-bold rounded-lg transition-colors">Cancel</button>
+                                <button type="submit" className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
             <aside className="w-64 flex-shrink-0 bg-slate-800/50 p-4 border-r border-slate-700 flex flex-col">
                 <div className="flex items-center gap-3 px-2 mb-8">
                     <div className="w-8 h-8 bg-blue-500/10 text-blue-400 flex items-center justify-center rounded-lg border border-blue-500/20">
@@ -237,15 +306,47 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                     )}
                     
                     {activeTab === 'users' && (
-                        <div className="animate-fade-in"><div className="grid grid-cols-1 lg:grid-cols-2 gap-8"><div className="bg-slate-900/40 p-6 rounded-xl border border-slate-700"><h3 className="text-xl font-bold mb-4 border-b border-slate-700 pb-3 text-slate-100">Add New User</h3><form onSubmit={handleAddUserSubmit} className="space-y-4"><div><label className="block text-sm font-medium text-slate-300 mb-1">Full Name</label><input type="text" name="fullName" value={newUser.fullName} onChange={(e) => setNewUser(p => ({...p, fullName: e.target.value}))} className={commonInputClasses} placeholder="e.g., Jane Doe" required disabled={!canEdit}/></div><div><label className="block text-sm font-medium text-slate-300 mb-1">Username</label><input type="text" name="username" value={newUser.username} onChange={(e) => setNewUser(p => ({...p, username: e.target.value}))} className={commonInputClasses} placeholder="e.g., jdoe99" required disabled={!canEdit}/></div><div><label className="block text-sm font-medium text-slate-300 mb-1">Password</label><input type="password" name="password" value={newUser.password} onChange={(e) => setNewUser(p => ({...p, password: e.target.value}))} className={commonInputClasses} placeholder="Set a temporary password" required disabled={!canEdit}/></div><button type="submit" disabled={!canEdit} className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors disabled:bg-slate-600 disabled:cursor-not-allowed">Add User</button></form></div><div><div className="flex justify-between items-center mb-4 border-b border-slate-700 pb-3"><h3 className="text-xl font-bold text-slate-100">Existing Users ({filteredUsers.length})</h3><ExportButton onClick={() => downloadCsv(['Full Name', 'Username', 'Status'], filteredUsers.map(u => [u.fullName, u.username, u.status]), 'user_management')} disabled={filteredUsers.length === 0} /></div><div className="mb-4"><input type="text" placeholder="Search by name or username..." value={userSearch} onChange={(e) => setUserSearch(e.target.value)} className={commonInputClasses} /></div><div className="space-y-3 max-h-[26rem] overflow-y-auto pr-2">{users.length === 0 ? <p className="text-slate-400 text-center py-4">No users have been added.</p> : filteredUsers.length === 0 ? <p className="text-slate-400 text-center py-4">No users match your search.</p> : filteredUsers.map(user => (<div key={user.username} className="bg-slate-800 p-3 rounded-lg border border-slate-700 flex justify-between items-center"><div><p className="font-semibold text-slate-200">{user.fullName}</p><p className="text-sm text-slate-400 font-mono">Username: {user.username}</p><p className={`text-xs font-bold mt-1 px-2 py-0.5 rounded-full inline-block ${user.status === 'active' ? 'bg-green-500/10 text-green-400' : 'bg-slate-700 text-slate-400'}`}>{user.status}</p></div>{user.username.toLowerCase() !== 'demo' && canEdit && (<button onClick={() => { if (window.confirm(`Are you sure you want to delete the user "${user.username}"?`)) { onDeleteUser(user.username); } }} className="p-2 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors" aria-label={`Delete user ${user.username}`}><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.124-2.033-2.124H8.033c-1.12 0-2.033.944-2.033 2.124v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg></button>)}</div>))}</div></div></div></div>
+                        <div className="animate-fade-in"><div className="grid grid-cols-1 lg:grid-cols-2 gap-8"><div className="bg-slate-900/40 p-6 rounded-xl border border-slate-700"><h3 className="text-xl font-bold mb-4 border-b border-slate-700 pb-3 text-slate-100">Add New User</h3><form onSubmit={handleAddUserSubmit} className="space-y-4"><div><label className="block text-sm font-medium text-slate-300 mb-1">Full Name</label><input type="text" name="fullName" value={newUser.fullName} onChange={(e) => setNewUser(p => ({...p, fullName: e.target.value}))} className={commonInputClasses} placeholder="e.g., Jane Doe" required disabled={!canEdit}/></div><div><label className="block text-sm font-medium text-slate-300 mb-1">Username</label><input type="text" name="username" value={newUser.username} onChange={(e) => setNewUser(p => ({...p, username: e.target.value}))} className={commonInputClasses} placeholder="e.g., jdoe99" required disabled={!canEdit}/></div><div className="relative"><label className="block text-sm font-medium text-slate-300 mb-1">Password</label><input type={showUserPass ? 'text' : 'password'} name="password" value={newUser.password} onChange={(e) => setNewUser(p => ({...p, password: e.target.value}))} className={`${commonInputClasses} pr-10`} placeholder="Set a temporary password" required disabled={!canEdit}/><button type="button" onClick={() => setShowUserPass(!showUserPass)} className="absolute right-3 top-[34px] text-slate-400 hover:text-slate-200 transition-colors"><EyeIcon visible={!showUserPass} /></button></div><button type="submit" disabled={!canEdit} className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors disabled:bg-slate-600 disabled:cursor-not-allowed">Add User</button></form></div><div><div className="flex justify-between items-center mb-4 border-b border-slate-700 pb-3"><h3 className="text-xl font-bold text-slate-100">Existing Users ({filteredUsers.length})</h3><ExportButton onClick={() => downloadCsv(['Full Name', 'Username', 'Status'], filteredUsers.map(u => [u.fullName, u.username, u.status]), 'user_management')} disabled={filteredUsers.length === 0} /></div><div className="mb-4"><input type="text" placeholder="Search by name or username..." value={userSearch} onChange={(e) => setUserSearch(e.target.value)} className={commonInputClasses} /></div><div className="space-y-3 max-h-[26rem] overflow-y-auto pr-2">{users.length === 0 ? <p className="text-slate-400 text-center py-4">No users have been added.</p> : filteredUsers.length === 0 ? <p className="text-slate-400 text-center py-4">No users match your search.</p> : filteredUsers.map(user => (<div key={user.username} className="bg-slate-800 p-3 rounded-lg border border-slate-700 flex justify-between items-center"><div><p className="font-semibold text-slate-200">{user.fullName}</p><p className="text-sm text-slate-400 font-mono">Username: {user.username}</p><p className={`text-xs font-bold mt-1 px-2 py-0.5 rounded-full inline-block ${user.status === 'active' ? 'bg-green-500/10 text-green-400' : 'bg-slate-700 text-slate-400'}`}>{user.status}</p></div>{user.username.toLowerCase() !== 'demo' && canEdit && (<button onClick={() => { if (window.confirm(`Are you sure you want to delete the user "${user.username}"?`)) { onDeleteUser(user.username); } }} className="p-2 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors" aria-label={`Delete user ${user.username}`}><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.124-2.033-2.124H8.033c-1.12 0-2.033.944-2.033 2.124v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg></button>)}</div>))}</div></div></div></div>
                     )}
 
                     {activeTab === 'questions' && (
-                        <div className="animate-fade-in"><div className="grid grid-cols-1 lg:grid-cols-2 gap-8"><div className="bg-slate-900/40 p-6 rounded-xl border border-slate-700"><h3 className="text-xl font-bold mb-4 border-b border-slate-700 pb-3 text-slate-100">Add New Question</h3><form onSubmit={handleAddQuestionSubmit} className="space-y-4"><div><label className="block text-sm font-medium text-slate-300 mb-1">Category</label><select name="quizId" value={newQuestion.quizId} onChange={(e) => setNewQuestion(p => ({ ...p, quizId: e.target.value }))} className={commonInputClasses} disabled={!canEdit}>{quizzes.map(quiz => <option key={quiz.id} value={quiz.id}>{quiz.name}</option>)}</select></div><div><label className="block text-sm font-medium text-slate-300 mb-1">Question Text</label><textarea name="question" value={newQuestion.question} onChange={(e) => setNewQuestion(p => ({ ...p, question: e.target.value }))} rows={3} className={commonInputClasses} required disabled={!canEdit}/></div>{newQuestion.options.map((option, index) => (<div key={index}><label className="block text-sm font-medium text-slate-300 mb-1">Option {index + 1}</label><input type="text" value={option} onChange={(e) => { const newOptions = [...newQuestion.options]; newOptions[index] = e.target.value; setNewQuestion(p => ({...p, options: newOptions})); }} className={commonInputClasses} required disabled={!canEdit}/></div>))}<div><label className="block text-sm font-medium text-slate-300 mb-1">Correct Answer</label><select name="correctAnswer" value={newQuestion.correctAnswer} onChange={(e) => setNewQuestion(p => ({ ...p, correctAnswer: e.target.value }))} className={commonInputClasses} required disabled={!canEdit}><option value="">Select the correct answer</option>{newQuestion.options.filter(o => o.trim()).map(option => <option key={option} value={option}>{option}</option>)}</select></div><button type="submit" className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors disabled:bg-slate-600 disabled:cursor-not-allowed" disabled={!canEdit}>Add Question</button></form></div><div className="space-y-8"><div className="bg-slate-900/40 p-6 rounded-xl border border-slate-700"><h3 className="text-xl font-bold mb-4 border-b border-slate-700 pb-3 text-slate-100">Data Management</h3><div className="space-y-4"><div className="flex items-center gap-4"><button onClick={handleExport} className="flex-1 px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-lg">Export to JSON</button><input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".json" className="hidden" /><button onClick={handleImportClick} disabled={!canEdit} className="flex-1 px-6 py-3 bg-slate-600 hover:bg-slate-500 text-white font-semibold rounded-lg disabled:bg-slate-700 disabled:cursor-not-allowed">Import from JSON</button></div></div></div><div className="p-4 bg-blue-500/10 border border-blue-500/20 text-blue-300 rounded-lg"><h3 className="font-bold text-lg mb-1 text-blue-200">How to Update the Live Quiz</h3><p className="text-sm">This panel is for preparing quiz updates. To make changes permanent for all users, you must:<br/> 1. <strong>Export to JSON</strong> after adding your new questions.<br/> 2. Replace the content of the <strong>`constants.ts`</strong> file with data from the exported file.<br/> 3. <strong>Deploy the updated code</strong> to the live server.</p></div></div></div></div>
+                        <div className="animate-fade-in">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                <div className="bg-slate-900/40 p-6 rounded-xl border border-slate-700">
+                                    <h3 className="text-xl font-bold mb-4 border-b border-slate-700 pb-3 text-slate-100">Add New Question</h3>
+                                    <form onSubmit={handleAddQuestionSubmit} className="space-y-4">
+                                        {/* ... Form content for adding questions ... */}
+                                        <div><label className="block text-sm font-medium text-slate-300 mb-1">Category</label><select name="quizId" value={newQuestion.quizId} onChange={(e) => setNewQuestion(p => ({ ...p, quizId: e.target.value }))} className={commonInputClasses} disabled={!canEdit}>{quizzes.map(quiz => <option key={quiz.id} value={quiz.id}>{quiz.name}</option>)}</select></div><div><label className="block text-sm font-medium text-slate-300 mb-1">Question Text</label><textarea name="question" value={newQuestion.question} onChange={(e) => setNewQuestion(p => ({ ...p, question: e.target.value }))} rows={3} className={commonInputClasses} required disabled={!canEdit}/></div>{newQuestion.options.map((option, index) => (<div key={index}><label className="block text-sm font-medium text-slate-300 mb-1">Option {index + 1}</label><input type="text" value={option} onChange={(e) => { const newOptions = [...newQuestion.options]; newOptions[index] = e.target.value; setNewQuestion(p => ({...p, options: newOptions})); }} className={commonInputClasses} required disabled={!canEdit}/></div>))}<div><label className="block text-sm font-medium text-slate-300 mb-1">Correct Answer</label><select name="correctAnswer" value={newQuestion.correctAnswer} onChange={(e) => setNewQuestion(p => ({ ...p, correctAnswer: e.target.value }))} className={commonInputClasses} required disabled={!canEdit}><option value="">Select the correct answer</option>{newQuestion.options.filter(o => o.trim()).map(option => <option key={option} value={option}>{option}</option>)}</select></div><button type="submit" className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors disabled:bg-slate-600 disabled:cursor-not-allowed" disabled={!canEdit}>Add Question</button>
+                                    </form>
+                                </div>
+                                <div>
+                                    <div className="flex justify-between items-center mb-4 border-b border-slate-700 pb-3">
+                                        <h3 className="text-xl font-bold text-slate-100">Existing Questions ({filteredQuestions.length})</h3>
+                                    </div>
+                                    <div className="flex gap-4 mb-4">
+                                        <input type="text" placeholder="Search questions..." value={questionSearch} onChange={(e) => setQuestionSearch(e.target.value)} className={commonInputClasses} />
+                                        <button onClick={handleExport} className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-lg text-sm transition-colors flex-shrink-0">Export JSON</button>
+                                        <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".json" className="hidden" /><button onClick={handleImportClick} disabled={!canEdit} className="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white font-semibold rounded-lg text-sm transition-colors disabled:bg-slate-700 disabled:cursor-not-allowed flex-shrink-0">Import JSON</button>
+                                    </div>
+                                    <div className="space-y-3 max-h-[32rem] overflow-y-auto pr-2">
+                                        {filteredQuestions.length === 0 ? <p className="text-slate-400 text-center py-4">No questions match your search.</p> : filteredQuestions.map(q => (
+                                            <div key={q.id} className="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                                                <p className="font-semibold text-slate-200 text-sm truncate">{q.question}</p>
+                                                <p className="text-xs text-slate-400 mt-1 font-mono">{q.category}</p>
+                                                {canEdit && <div className="flex items-center gap-2 mt-2">
+                                                    <button onClick={() => setEditingQuestion({ quizId: q.quizId, question: q })} className="px-3 py-1 text-xs font-bold rounded-md bg-slate-700 hover:bg-slate-600 text-slate-200">Edit</button>
+                                                    <button onClick={() => { if (window.confirm(`Are you sure you want to delete this question?`)) { onDeleteQuestion(q.quizId, q.id); toast.success('Question deleted.'); } }} className="px-3 py-1 text-xs font-bold rounded-md bg-red-900/50 hover:bg-red-900 text-red-400">Delete</button>
+                                                </div>}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     )}
 
                     {activeTab === 'admins' && isSuperAdmin && (
-                        <div className="animate-fade-in"><div className="grid grid-cols-1 lg:grid-cols-2 gap-8"><div className="bg-slate-900/40 p-6 rounded-xl border border-slate-700"><h3 className="text-xl font-bold mb-4 border-b border-slate-700 pb-3 text-slate-100">Add New Admin</h3><form onSubmit={handleAddAdminSubmit} className="space-y-4"><div><label className="block text-sm font-medium text-slate-300 mb-1">Username</label><input type="text" value={newAdmin.username} onChange={(e) => setNewAdmin(p=>({...p, username: e.target.value}))} className={commonInputClasses} required /></div><div><label className="block text-sm font-medium text-slate-300 mb-1">Password</label><input type="password" value={newAdmin.password} onChange={(e) => setNewAdmin(p=>({...p, password: e.target.value}))} className={commonInputClasses} required /></div><div><label className="block text-sm font-medium text-slate-300 mb-1">Role</label><select value={newAdmin.role} onChange={(e) => setNewAdmin(p=>({...p, role: e.target.value as AdminRole}))} className={commonInputClasses}><option value="viewer">Viewer (Read-only)</option><option value="editor">Editor</option></select></div><button type="submit" className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors">Add Admin</button></form></div><div><div className="flex justify-between items-center mb-4 border-b border-slate-700 pb-3"><h3 className="text-xl font-bold text-slate-100">Existing Admins ({filteredAdmins.length})</h3><ExportButton onClick={() => downloadCsv(['Username', 'Role'], filteredAdmins.map(a => [a.username, a.role]), 'admin_management')} disabled={filteredAdmins.length === 0} /></div><div className="mb-4"><input type="text" placeholder="Search by username..." value={adminSearch} onChange={(e) => setAdminSearch(e.target.value)} className={commonInputClasses} /></div><div className="space-y-3 max-h-[26rem] overflow-y-auto pr-2">{adminUsers.map(adm => (<div key={adm.username} className="bg-slate-800 p-3 rounded-lg border border-slate-700 flex justify-between items-center"><div><p className="font-semibold text-slate-200">{adm.username}</p><p className={`text-xs font-bold mt-1 px-2 py-0.5 rounded-full inline-block ${adm.role === 'super' ? 'bg-amber-500/10 text-amber-400' : adm.role === 'editor' ? 'bg-blue-500/10 text-blue-400' : 'bg-slate-700 text-slate-400'}`}>{adm.role}</p></div>{adm.role !== 'super' && (<button onClick={() => {if (window.confirm(`Are you sure you want to delete the admin "${adm.username}"?`)) { onDeleteAdmin(adm.username); }}} className="p-2 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors" aria-label={`Delete admin ${adm.username}`}><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.124-2.033-2.124H8.033c-1.12 0-2.033.944-2.033 2.124v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg></button>)}</div>))}</div></div></div></div>
+                        <div className="animate-fade-in"><div className="grid grid-cols-1 lg:grid-cols-2 gap-8"><div className="bg-slate-900/40 p-6 rounded-xl border border-slate-700"><h3 className="text-xl font-bold mb-4 border-b border-slate-700 pb-3 text-slate-100">Add New Admin</h3><form onSubmit={handleAddAdminSubmit} className="space-y-4"><div><label className="block text-sm font-medium text-slate-300 mb-1">Username</label><input type="text" value={newAdmin.username} onChange={(e) => setNewAdmin(p=>({...p, username: e.target.value}))} className={commonInputClasses} required /></div><div className="relative"><label className="block text-sm font-medium text-slate-300 mb-1">Password</label><input type={showAdminPass ? 'text' : 'password'} value={newAdmin.password} onChange={(e) => setNewAdmin(p=>({...p, password: e.target.value}))} className={`${commonInputClasses} pr-10`} required /><button type="button" onClick={() => setShowAdminPass(!showAdminPass)} className="absolute right-3 top-[34px] text-slate-400 hover:text-slate-200 transition-colors"><EyeIcon visible={!showAdminPass} /></button></div><div><label className="block text-sm font-medium text-slate-300 mb-1">Role</label><select value={newAdmin.role} onChange={(e) => setNewAdmin(p=>({...p, role: e.target.value as AdminRole}))} className={commonInputClasses}><option value="viewer">Viewer (Read-only)</option><option value="editor">Editor</option></select></div><button type="submit" className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors">Add Admin</button></form></div><div><div className="flex justify-between items-center mb-4 border-b border-slate-700 pb-3"><h3 className="text-xl font-bold text-slate-100">Existing Admins ({filteredAdmins.length})</h3><ExportButton onClick={() => downloadCsv(['Username', 'Role'], filteredAdmins.map(a => [a.username, a.role]), 'admin_management')} disabled={filteredAdmins.length === 0} /></div><div className="mb-4"><input type="text" placeholder="Search by username..." value={adminSearch} onChange={(e) => setAdminSearch(e.target.value)} className={commonInputClasses} /></div><div className="space-y-3 max-h-[26rem] overflow-y-auto pr-2">{adminUsers.map(adm => (<div key={adm.username} className="bg-slate-800 p-3 rounded-lg border border-slate-700 flex justify-between items-center"><div><p className="font-semibold text-slate-200">{adm.username}</p><p className={`text-xs font-bold mt-1 px-2 py-0.5 rounded-full inline-block ${adm.role === 'super' ? 'bg-amber-500/10 text-amber-400' : adm.role === 'editor' ? 'bg-blue-500/10 text-blue-400' : 'bg-slate-700 text-slate-400'}`}>{adm.role}</p></div>{adm.role !== 'super' && (<button onClick={() => {if (window.confirm(`Are you sure you want to delete the admin "${adm.username}"?`)) { onDeleteAdmin(adm.username); }}} className="p-2 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors" aria-label={`Delete admin ${adm.username}`}><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.124-2.033-2.124H8.033c-1.12 0-2.033.944-2.033 2.124v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg></button>)}</div>))}</div></div></div></div>
                     )}
                 </div>
             </main>

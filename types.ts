@@ -64,8 +64,10 @@ export interface AdminPanelProps {
     onAddUser: (user: Omit<User, 'status'>) => boolean;
     onDeleteUser: (username: string) => void;
     onAddQuestion: (quizId: string, question: Omit<Question, 'id'>) => void;
+    onEditQuestion: (quizId: string, updatedQuestion: Question) => void;
+    onDeleteQuestion: (quizId: string, questionId: number) => void;
     onImportQuizzes: (quizzes: Quiz[]) => void;
-    onUpdateRequestStatus: (username: string, status: 'active' | 'expired') => void;
+    onUpdateRequestStatus: (username: string, status: 'active' | 'expired') => Promise<void>;
     onAddAdmin: (admin: AdminUser) => boolean;
     onDeleteAdmin: (username: string) => void;
 }

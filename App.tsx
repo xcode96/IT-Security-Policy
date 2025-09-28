@@ -1,6 +1,8 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { QUIZZES as INITIAL_QUIZZES } from './constants';
 import { Question, QuizProgress, TrainingReport, Quiz, User, AdminUser } from './types';
+import { API_REPORTS_URL, API_PROGRESS_URL } from './apiConfig';
+import { useToast } from './components/ToastProvider';
 import QuestionCard from './components/QuestionCard';
 import ResultsCard from './components/ResultsCard';
 import QuizHub from './components/QuizHub';
@@ -20,6 +22,7 @@ const App: React.FC = () => {
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [loggedInAdmin, setLoggedInAdmin] = useState<AdminUser | null>(null);
   const [finalOverallResult, setFinalOverallResult] = useState<boolean | null>(null);
+  const toast = useToast();
 
   // Effect for Admin User initialization
   useEffect(() => {
@@ -91,6 +94,25 @@ const App: React.FC = () => {
   const [activeQuizId, setActiveQuizId] = useState<string | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
 
+  // Auto-save progress to the server whenever it changes
+  useEffect(() => {
+    if (user && view !== 'user_login' && quizProgress !== initialProgress) {
+      const saveProgress = async () => {
+        try {
+          await fetch(`${API_PROGRESS_URL}/${user.username}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(quizProgress),
+          });
+          console.log('Progress auto-saved.');
+        } catch (error) {
+          console.error("Failed to auto-save progress:", error);
+        }
+      };
+      saveProgress();
+    }
+  }, [quizProgress, user, view, initialProgress]);
+
   const isAdminView = useMemo(() => new URLSearchParams(window.location.search).get('page') === 'admin', []);
 
   const handleAdminLogin = (username: string, password: string): { success: boolean, message: string } => {
@@ -99,12 +121,13 @@ const App: React.FC = () => {
     );
     if (adminFound) {
       setLoggedInAdmin(adminFound);
+      toast.success(`Welcome, ${adminFound.username}!`);
       return { success: true, message: '' };
     }
     return { success: false, message: 'Invalid admin username or password.' };
   };
   
-  const handleUserLogin = useCallback((username: string, password: string): { success: boolean, message: string } => {
+  const handleUserLogin = useCallback(async (username: string, password: string): Promise<{ success: boolean, message: string }> => {
     const cleanUsername = username.trim().toLowerCase();
     const userFound = users.find(u => u.username.toLowerCase() === cleanUsername);
     if (userFound) {
@@ -114,13 +137,29 @@ const App: React.FC = () => {
       if (userFound.status === 'expired') {
         return { success: false, message: 'This account has already completed the training and is inactive. Please contact an administrator for a retake.' };
       }
+      
       setUser({ fullName: userFound.fullName, username: userFound.username });
+      
+      // Fetch progress from server
+      try {
+        const response = await fetch(`${API_PROGRESS_URL}/${userFound.username}`);
+        if (response.ok) {
+            const savedProgress = await response.json();
+            setQuizProgress(savedProgress);
+            toast.info('Your previous progress has been loaded.');
+        } else {
+            setQuizProgress(initialProgress);
+        }
+      } catch (error) {
+        console.error("Could not fetch progress, starting fresh.", error);
+        setQuizProgress(initialProgress);
+      }
+      
       setView('quiz_hub');
-      setQuizProgress(initialProgress);
       return { success: true, message: '' };
     }
     return { success: false, message: 'Invalid Username or password.' };
-  }, [users, initialProgress]);
+  }, [users, initialProgress, toast]);
 
   const handleStartQuiz = useCallback((quizId: string) => {
     setQuizProgress(prev => ({
@@ -186,9 +225,8 @@ const App: React.FC = () => {
   }, []);
 
   const handleSubmitReport = useCallback(async (reportData: TrainingReport): Promise<boolean> => {
-    const API_BASE = 'https://it-security-policy.onrender.com/api/reports';
     try {
-        const response = await fetch(API_BASE, {
+        const response = await fetch(API_REPORTS_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(reportData),
@@ -201,6 +239,10 @@ const App: React.FC = () => {
         setFinalOverallResult(reportData.overallResult);
 
         if (user) {
+            // Clear progress from server
+            await fetch(`${API_PROGRESS_URL}/${user.username}`, { method: 'DELETE' });
+            
+            // Expire user account
             const updatedUsers = users.map(u => 
                 u.username.toLowerCase() === user.username.toLowerCase() ? { ...u, status: 'expired' as const } : u
             );
@@ -212,10 +254,10 @@ const App: React.FC = () => {
 
     } catch (error) {
         console.error("Failed to submit report to server:", error);
-        alert("There was an unexpected error submitting your report. Please check your internet connection and try again.");
+        toast.error("There was an error submitting your report. Please check your internet connection and try again.");
         return false;
     }
-  }, [user, users]);
+  }, [user, users, toast]);
 
   const handleRestartTraining = useCallback(() => {
     setQuizProgress(initialProgress);
@@ -226,12 +268,23 @@ const App: React.FC = () => {
     setView('user_login');
   }, [initialProgress]);
   
-  const handleUpdateRequestStatus = (username: string, status: 'active' | 'expired') => {
+  const handleUpdateRequestStatus = async (username: string, status: 'active' | 'expired') => {
     const updatedUsers = users.map(u => 
         u.username.toLowerCase() === username.toLowerCase() ? { ...u, status } : u
     );
     setUsers(updatedUsers);
     localStorage.setItem('app_users', JSON.stringify(updatedUsers));
+
+    // If reactivating user for retake, clear their old progress from the server
+    if (status === 'active') {
+        try {
+            await fetch(`${API_PROGRESS_URL}/${username}`, { method: 'DELETE' });
+            toast.success(`Progress for ${username} cleared from server for retake.`);
+        } catch (error) {
+            toast.error(`Failed to clear server progress for ${username}.`);
+            console.error(`Failed to clear server progress for ${username}:`, error);
+        }
+    }
   };
 
   const handleAddQuestion = (quizId: string, question: Omit<Question, 'id'>) => {
@@ -245,6 +298,30 @@ const App: React.FC = () => {
         });
     });
   };
+
+  const handleEditQuestion = (quizId: string, updatedQuestion: Question) => {
+      setQuizzes(prevQuizzes => prevQuizzes.map(quiz => {
+          if (quiz.id === quizId) {
+              return {
+                  ...quiz,
+                  questions: quiz.questions.map(q => q.id === updatedQuestion.id ? updatedQuestion : q)
+              };
+          }
+          return quiz;
+      }));
+  };
+
+  const handleDeleteQuestion = (quizId: string, questionId: number) => {
+      setQuizzes(prevQuizzes => prevQuizzes.map(quiz => {
+          if (quiz.id === quizId) {
+              return {
+                  ...quiz,
+                  questions: quiz.questions.filter(q => q.id !== questionId)
+              };
+          }
+          return quiz;
+      }));
+  };
   
   const handleAddUser = (newUser: Omit<User, 'status'>): boolean => {
     const cleanUser = {
@@ -254,7 +331,7 @@ const App: React.FC = () => {
     };
 
     if (users.some(u => u.username.toLowerCase() === cleanUser.username.toLowerCase())) {
-        alert('Username already exists.');
+        toast.error('Username already exists.');
         return false;
     }
     
@@ -262,46 +339,50 @@ const App: React.FC = () => {
     const updatedUsers = [...users, userToAdd];
     setUsers(updatedUsers);
     localStorage.setItem('app_users', JSON.stringify(updatedUsers));
+    toast.success('User added successfully!');
     return true;
   };
 
   const handleDeleteUser = (usernameToDelete: string) => {
     if (usernameToDelete.toLowerCase() === 'demo') {
-        alert("The default Demo user cannot be deleted.");
+        toast.error("The default Demo user cannot be deleted.");
         return;
     }
     const updatedUsers = users.filter(user => user.username !== usernameToDelete);
     setUsers(updatedUsers);
     localStorage.setItem('app_users', JSON.stringify(updatedUsers));
+    toast.success('User deleted successfully.');
   };
 
   const handleAddAdmin = (newAdmin: AdminUser): boolean => {
     if (adminUsers.some(admin => admin.username.toLowerCase() === newAdmin.username.toLowerCase())) {
-      alert('Admin username already exists.');
+      toast.error('Admin username already exists.');
       return false;
     }
     const updatedAdmins = [...adminUsers, newAdmin];
     setAdminUsers(updatedAdmins);
     localStorage.setItem('app_admins', JSON.stringify(updatedAdmins));
+    toast.success('Admin added successfully!');
     return true;
   };
 
   const handleDeleteAdmin = (usernameToDelete: string) => {
     if (usernameToDelete.toLowerCase() === 'superadmin') {
-      alert('The Super Admin account cannot be deleted.');
+      toast.error('The Super Admin account cannot be deleted.');
       return;
     }
     const updatedAdmins = adminUsers.filter(admin => admin.username !== usernameToDelete);
     setAdminUsers(updatedAdmins);
     localStorage.setItem('app_admins', JSON.stringify(updatedAdmins));
+    toast.success('Admin deleted successfully.');
   };
 
   const handleImportQuizzes = (newQuizzes: Quiz[]) => {
     if (Array.isArray(newQuizzes) && newQuizzes.every(q => q.id && q.name && Array.isArray(q.questions))) {
         setQuizzes(newQuizzes);
-        alert('Quizzes imported successfully!');
+        toast.success('Quizzes imported successfully!');
     } else {
-        alert('Invalid quiz file format.');
+        toast.error('Invalid quiz file format.');
     }
   };
 
@@ -315,6 +396,8 @@ const App: React.FC = () => {
               onAddUser={handleAddUser}
               onDeleteUser={handleDeleteUser}
               onAddQuestion={handleAddQuestion}
+              onEditQuestion={handleEditQuestion}
+              onDeleteQuestion={handleDeleteQuestion}
               onImportQuizzes={handleImportQuizzes}
               onUpdateRequestStatus={handleUpdateRequestStatus}
               onAddAdmin={handleAddAdmin}
