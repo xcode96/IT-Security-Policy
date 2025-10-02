@@ -11,8 +11,7 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <ToastProvider>
-      <App />
-    </ToastProvider>
+    {/* FIX: Explicitly passing children as a prop to work around a potential JSX parsing issue. */}
+    <ToastProvider children={<App />} />
   </React.StrictMode>
 );

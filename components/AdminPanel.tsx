@@ -262,24 +262,21 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                     <h1 className="text-xl font-bold text-slate-100">Admin Panel</h1>
                 </div>
                 <nav className="flex flex-col gap-2">
-                    <NavLink tab="reports" icon={<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5"><path d="M3.5 2.75A.75.75 0 002.75 3.5v13.5A.75.75 0 003.5 18h13a.75.75 0 00.75-.75V8.162a.75.75 0 00-.22-.53l-5.06-5.06A.75.75 0 0011.84 2H3.5A.75.75 0 002.75 3.5V2.75zm6.56 2.5l4.69 4.69H11.25a1 1 0 01-1-1V5.25z" /></svg>}>
-                        User Reports
-                    </NavLink>
-                     <NavLink tab="requests" icon={<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M15.312 11.424a5.5 5.5 0 01-9.201-4.42 5.5 5.5 0 011.166-1.023l.526-1.053a.75.75 0 011.45.042l.206 1.03a6.959 6.959 0 01-1.287 5.965 5.5 5.5 0 01-1.263 1.023A3.489 3.489 0 006.5 14.5a3.5 3.5 0 005.474 2.651.75.75 0 11-1.3-1.3A2 2 0 018.5 14.5a2 2 0 012.288-1.884l.526-1.053a.75.75 0 011.45.042l.206 1.03a5.5 5.5 0 01-1.637 4.144z" clipRule="evenodd" /></svg>}>
+                    {/* FIX: Explicitly passing children as a prop to work around a potential JSX parsing issue. */}
+                    <NavLink tab="reports" icon={<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5"><path d="M3.5 2.75A.75.75 0 002.75 3.5v13.5A.75.75 0 003.5 18h13a.75.75 0 00.75-.75V8.162a.75.75 0 00-.22-.53l-5.06-5.06A.75.75 0 0011.84 2H3.5A.75.75 0 002.75 3.5V2.75zm6.56 2.5l4.69 4.69H11.25a1 1 0 01-1-1V5.25z" /></svg>} children="User Reports" />
+                    {/* FIX: Explicitly passing children as a prop to work around a potential JSX parsing issue. */}
+                     <NavLink tab="requests" icon={<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M15.312 11.424a5.5 5.5 0 01-9.201-4.42 5.5 5.5 0 011.166-1.023l.526-1.053a.75.75 0 011.45.042l.206 1.03a6.959 6.959 0 01-1.287 5.965 5.5 5.5 0 01-1.263 1.023A3.489 3.489 0 006.5 14.5a3.5 3.5 0 005.474 2.651.75.75 0 11-1.3-1.3A2 2 0 018.5 14.5a2 2 0 012.288-1.884l.526-1.053a.75.75 0 011.45.042l.206 1.03a5.5 5.5 0 01-1.637 4.144z" clipRule="evenodd" /></svg>} children={<>
                         Retake Requests
                         {retakeRequests.length > 0 && (
                             <span className="ml-auto bg-amber-500 text-slate-900 text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center animate-pulse">{retakeRequests.length}</span>
                         )}
-                    </NavLink>
-                    <NavLink tab="users" icon={<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5"><path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.095a1.23 1.23 0 00.41-1.412A9.957 9.957 0 0010 12c-2.31 0-4.438.784-6.131 2.095z" /></svg>}>
-                        User Management
-                    </NavLink>
-                    <NavLink tab="questions" icon={<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M15.28 4.72a.75.75 0 010 1.06l-6.5 6.5a.75.75 0 01-1.06 0l-3.5-3.5a.75.75 0 111.06-1.06L8.5 10.69l6.02-6.03a.75.75 0 011.06 0zm-7.03 8.22a.75.75 0 100-1.5.75.75 0 000 1.5zM12.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM15.28 9.72a.75.75 0 010 1.06l-3 3a.75.75 0 11-1.06-1.06l3-3a.75.75 0 011.06 0z" clipRule="evenodd" /></svg>}>
-                        Question Management
-                    </NavLink>
-                    <NavLink tab="admins" icon={<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-5.5-2.5a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0zM10 12a5.99 5.99 0 00-4.793 2.39A6.483 6.483 0 0010 16.5a6.483 6.483 0 004.793-2.11A5.99 5.99 0 0010 12z" clipRule="evenodd" /></svg>} visible={isSuperAdmin}>
-                        Admin Management
-                    </NavLink>
+                    </>} />
+                    {/* FIX: Explicitly passing children as a prop to work around a potential JSX parsing issue. */}
+                    <NavLink tab="users" icon={<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5"><path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.095a1.23 1.23 0 00.41-1.412A9.957 9.957 0 0010 12c-2.31 0-4.438.784-6.131 2.095z" /></svg>} children="User Management" />
+                    {/* FIX: Explicitly passing children as a prop to work around a potential JSX parsing issue. */}
+                    <NavLink tab="questions" icon={<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M15.28 4.72a.75.75 0 010 1.06l-6.5 6.5a.75.75 0 01-1.06 0l-3.5-3.5a.75.75 0 111.06-1.06L8.5 10.69l6.02-6.03a.75.75 0 011.06 0zm-7.03 8.22a.75.75 0 100-1.5.75.75 0 000 1.5zM12.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM15.28 9.72a.75.75 0 010 1.06l-3 3a.75.75 0 11-1.06-1.06l3-3a.75.75 0 011.06 0z" clipRule="evenodd" /></svg>} children="Question Management" />
+                    {/* FIX: Explicitly passing children as a prop to work around a potential JSX parsing issue. */}
+                    <NavLink tab="admins" icon={<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-5.5-2.5a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0zM10 12a5.99 5.99 0 00-4.793 2.39A6.483 6.483 0 0010 16.5a6.483 6.483 0 004.793-2.11A5.99 5.99 0 0010 12z" clipRule="evenodd" /></svg>} visible={isSuperAdmin} children="Admin Management" />
                 </nav>
             </aside>
             

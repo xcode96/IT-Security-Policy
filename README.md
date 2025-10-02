@@ -48,6 +48,14 @@ We'll use a free service called [Render](https://render.com) to host the API.
     - Scroll down and click **Create Web Service**.
     - Render will build and deploy your API. After a minute or two, you will get a live URL at the top of the page (e.g., `https://your-api-name.onrender.com`). **Copy this URL.**
 
+3.  **Configure Environment Variables (CRUCIAL STEP)**:
+    - After the first deployment, go to the **Environment** tab for your new web service in Render.
+    - Under "Environment Variables", click **Add Environment Variable**.
+    - Create a new variable with the following details:
+      - **Key**: `CORS_ORIGIN`
+      - **Value**: `https://your-frontend-site.vercel.app` (Replace this with the actual URL of your deployed frontend application from Vercel).
+    - Click **Save Changes**. Render will automatically redeploy your API with this new setting. This step is essential for security and allows your frontend to communicate with your backend.
+
 ---
 
 ### Part 2: Frontend Setup & Deployment
@@ -56,24 +64,22 @@ Now that you have a live API URL, you can configure and deploy the frontend.
 
 #### A. Connecting the Frontend to Your Live API
 
-1.  **Locate the API Endpoints**:
-    Open the following frontend files in your code editor:
-    - `App.tsx`
-    - `components/AdminDashboard.tsx`
+1.  **Locate the API Configuration File**:
+    Open the `apiConfig.ts` file in your code editor.
 
-2.  **Update the `API_BASE` Constant**:
-    In both files, find the line that defines `API_BASE`:
+2.  **Update the `API_BASE_URL` Constant**:
+    In that file, find the line that defines `API_BASE_URL`:
     ```javascript
-    const API_BASE = 'https://iso27001-pnrp.onrender.com/api/reports';
+    const API_BASE_URL = 'https://it-security-policy.onrender.com';
     ```
 
 3.  **Replace the URL**:
-    Change the placeholder URL to your own live backend URL from Render, making sure to add `/api/reports` at the end. For example:
+    Change the placeholder URL to your own live backend URL from Render. For example:
     ```javascript
-    const API_BASE = 'https://your-api-name.onrender.com/api/reports';
+    const API_BASE_URL = 'https://your-api-name.onrender.com';
     ```
 
-4.  **Save the files**. Your frontend is now configured to communicate with your live backend.
+4.  **Save the file**. Your frontend is now configured to communicate with your live backend.
 
 #### B. How to Deploy the Frontend to a Live Server
 

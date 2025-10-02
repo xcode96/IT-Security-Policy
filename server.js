@@ -10,12 +10,15 @@ const PORT = process.env.PORT || 3001;
 
 // Secure CORS configuration
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN,
+  // It's crucial to set the `CORS_ORIGIN` environment variable in your hosting provider (e.g., Render)
+  // to the URL of your deployed frontend application (e.g., your Vercel URL).
+  // For local development or as a fallback, it allows all origins ('*').
+  origin: process.env.CORS_ORIGIN || '*',
   optionsSuccessStatus: 200,
 };
 
 if (!process.env.CORS_ORIGIN) {
-    console.warn("CORS_ORIGIN environment variable not set. API will not be accessible from the frontend.");
+    console.warn("WARNING: CORS_ORIGIN environment variable not set. Allowing all origins. For production, you should set this to your frontend's URL.");
 }
 
 app.use(cors(corsOptions));

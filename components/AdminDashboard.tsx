@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { TrainingReport } from '../types';
 import { QUIZZES, PASSING_PERCENTAGE } from '../constants';
+import { API_REPORTS_URL } from '../apiConfig';
 import Certificate from './Certificate';
 
 const AdminDashboard: React.FC = () => {
@@ -13,14 +14,12 @@ const AdminDashboard: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState<'all' | 'passed' | 'failed'>('all');
 
-    const API_BASE = 'https://it-security-policy.onrender.com/api/reports';
-
     useEffect(() => {
         const fetchReports = async () => {
             setIsLoading(true);
             setError(null);
             try {
-                const response = await fetch(API_BASE);
+                const response = await fetch(API_REPORTS_URL);
                 if (!response.ok) {
                     throw new Error(`Network response was not ok (${response.status})`);
                 }
@@ -125,7 +124,7 @@ const AdminDashboard: React.FC = () => {
     const handleClearReports = async () => {
         if (window.confirm("Are you sure you want to clear all submitted reports? This action cannot be undone.")) {
             try {
-                const response = await fetch(API_BASE, { method: 'DELETE' });
+                const response = await fetch(API_REPORTS_URL, { method: 'DELETE' });
                 if (!response.ok) throw new Error('Server-side deletion failed.');
                 setReports([]);
                 setSelectedReportId(null);
