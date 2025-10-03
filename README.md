@@ -6,6 +6,10 @@ This is an interactive, full-stack application designed to test and improve know
 2.  **Backend**: A simple Node.js/Express API server to receive, store, and manage training reports.
 
 3.  <img width="751" height="368" alt="image" src="https://github.com/user-attachments/assets/476d44bb-d482-44ed-9cfd-8682d49bdc5d" />
+    <img width="307" height="349" alt="image" src="https://github.com/user-attachments/assets/2e35b4bb-e078-41fd-8ae7-4b35e24f5343" />
+    <img width="952" height="353" alt="image" src="https://github.com/user-attachments/assets/eebed7cf-1b6c-4cd5-89d4-002b28f2cbe6" />
+
+
 
 
 
