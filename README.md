@@ -8,9 +8,9 @@ This is an interactive, full-stack application designed to test and improve know
 3.
 4.   <img width="960" height="540" alt="image" src="https://github.com/user-attachments/assets/ce3b9b15-afa7-454b-9564-c04cdee1de1d" />
 
-    <img width="960" height="540" alt="image" src="https://github.com/user-attachments/assets/6cec1fc7-5c81-4d04-a7a9-2c4ee863ac7e" />
+     <img width="960" height="540" alt="image" src="https://github.com/user-attachments/assets/6cec1fc7-5c81-4d04-a7a9-2c4ee863ac7e" />
 
-    <img width="960" height="540" alt="image" src="https://github.com/user-attachments/assets/a31f7d71-c3da-4d1a-9b10-c47840d870cc" />
+     <img width="960" height="540" alt="image" src="https://github.com/user-attachments/assets/a31f7d71-c3da-4d1a-9b10-c47840d870cc" />
 
 
 
