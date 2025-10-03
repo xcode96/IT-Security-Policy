@@ -5,6 +5,9 @@ This is an interactive, full-stack application designed to test and improve know
 1.  **Frontend**: A user-friendly React application for employees to take quizzes and for administrators to manage the system.
 2.  **Backend**: A simple Node.js/Express API server to receive, store, and manage training reports.
 
+3.  ![Uploading image.png…]()
+
+
 ---
 
 ## Project Setup & Deployment Guide
