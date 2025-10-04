@@ -1,6 +1,18 @@
 {
-  "devDependencies": {
-    "vite": "^5.0.0",
-    "@vitejs/plugin-react": "^4.0.0"
+  "name": "it-security-api-server",
+  "version": "1.0.0",
+  "description": "A simple API server for the IT Security Training application.",
+  "type": "module",
+  "scripts": {
+    "start": "node api/index.js"
+  },
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  },
+  "engines": {
+    "node": ">=18.x"
   }
 }
