@@ -32,7 +32,7 @@ const UserLogin: React.FC<UserLoginProps> = ({ onLogin }) => {
   );
 
   return (
-    <div className="w-full max-w-4xl bg-slate-800/50 border border-slate-700 rounded-2xl shadow-lg shadow-black/20 backdrop-blur-sm overflow-hidden flex flex-col md:flex-row md:min-h-[500px] animate-fade-in">
+    <div className="w-full max-w-4xl bg-slate-800/50 border border-slate-700 rounded-2xl shadow-lg shadow-black/20 backdrop-blur-sm overflow-hidden flex flex-col md:flex-row animate-fade-in">
         {/* Left Panel */}
         <div className="w-full md:w-2/5 p-8 flex flex-col justify-center items-center text-center bg-gradient-to-br from-slate-900 to-slate-800">
             <div className="w-20 h-20 bg-blue-500/10 text-blue-400 flex items-center justify-center rounded-full mb-4 border-2 border-blue-500/20">

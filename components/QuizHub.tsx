@@ -122,7 +122,7 @@ const QuizHub: React.FC<QuizHubProps> = ({ user, quizzes, quizProgress, onStartQ
                         const buttonText = isCompleted ? 'Review' : progress.status === 'in_progress' ? 'Continue' : 'Start';
 
                         return (
-                            <div key={quiz.id} className="bg-slate-800/70 p-4 rounded-xl border border-slate-700 flex flex-col sm:flex-row items-center gap-4 transition-all duration-300 hover:border-blue-500/50 hover:shadow-lg hover:shadow-black/20 hover:-translate-y-0.5">
+                            <div key={quiz.id} className="bg-slate-800/70 p-4 rounded-xl border border-slate-700 flex flex-col md:flex-row md:items-center gap-4 transition-all duration-300 hover:border-blue-500/50 hover:shadow-lg hover:shadow-black/20 hover:-translate-y-0.5">
                                 <div className="flex items-center gap-4 w-full flex-grow">
                                     <TopicIcon categoryId={quiz.id} />
                                     <div className="flex-grow">
@@ -132,11 +132,11 @@ const QuizHub: React.FC<QuizHubProps> = ({ user, quizzes, quizProgress, onStartQ
                                         </p>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-4 flex-shrink-0 w-full sm:w-auto justify-end">
+                                <div className="flex items-center gap-4 w-full md:w-auto flex-shrink-0 justify-between md:justify-end mt-4 md:mt-0 pt-4 md:pt-0 border-t border-slate-700 md:border-t-0">
                                     {getStatusPill(progress.status)}
                                     <button
                                         onClick={() => onStartQuiz(quiz.id)}
-                                        className={`w-full sm:w-28 text-center px-5 py-2.5 font-semibold rounded-lg text-sm transition-all duration-200 transform shadow-sm flex items-center justify-center gap-2 ${
+                                        className={`flex-1 md:flex-initial md:w-28 text-center px-5 py-2.5 font-semibold rounded-lg text-sm transition-all duration-200 transform shadow-sm flex items-center justify-center gap-2 ${
                                             isCompleted 
                                             ? 'bg-slate-700 hover:bg-slate-600 text-slate-300' 
                                             : 'bg-blue-500 hover:bg-blue-400 text-white shadow-blue-500/20 hover:scale-105'

@@ -260,7 +260,7 @@ const AdminDashboard: React.FC = () => {
                                 <h3 className="font-bold text-slate-200 text-lg">{report.user.fullName} <span className="text-slate-400 font-normal text-base">(Username: {report.user.username})</span></h3>
                                 <p className="text-slate-400 text-sm">Submitted on: {new Date(report.submissionDate).toLocaleString()}</p>
                             </div>
-                            <div className="flex items-center gap-2 w-full sm:w-auto flex-shrink-0 flex-wrap justify-end">
+                            <div className="flex items-center gap-2 w-full sm:w-auto flex-shrink-0 flex-wrap justify-start sm:justify-end">
                                 <span className={`px-3 py-1 text-xs font-bold leading-none rounded-full w-20 text-center ${report.overallResult ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
                                     {report.overallResult ? 'Pass' : 'Fail'}
                                 </span>
