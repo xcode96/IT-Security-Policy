@@ -72,7 +72,7 @@ const QuizHub: React.FC<QuizHubProps> = ({ user, quizzes, quizProgress, onStartQ
   };
 
   return (
-    <div className="p-6 md:p-8 animate-fade-in">
+    <div className="p-4 md:p-8 animate-fade-in">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Panel - User Stats */}
             <div className="lg:col-span-1 bg-slate-900/40 p-6 rounded-xl border border-slate-700 flex flex-col items-center text-center">
@@ -122,19 +122,21 @@ const QuizHub: React.FC<QuizHubProps> = ({ user, quizzes, quizProgress, onStartQ
                         const buttonText = isCompleted ? 'Review' : progress.status === 'in_progress' ? 'Continue' : 'Start';
 
                         return (
-                            <div key={quiz.id} className="bg-slate-800/70 p-4 rounded-xl border border-slate-700 flex items-center gap-4 transition-all duration-300 hover:border-blue-500/50 hover:shadow-lg hover:shadow-black/20 hover:-translate-y-0.5">
-                                <TopicIcon categoryId={quiz.id} />
-                                <div className="flex-grow">
-                                    <h3 className="font-bold text-slate-100 text-lg leading-tight">{quiz.name}</h3>
-                                    <p className="text-slate-400 text-sm mt-1 font-mono">
-                                        {progress.total} Questions
-                                    </p>
+                            <div key={quiz.id} className="bg-slate-800/70 p-4 rounded-xl border border-slate-700 flex flex-col sm:flex-row items-center gap-4 transition-all duration-300 hover:border-blue-500/50 hover:shadow-lg hover:shadow-black/20 hover:-translate-y-0.5">
+                                <div className="flex items-center gap-4 w-full flex-grow">
+                                    <TopicIcon categoryId={quiz.id} />
+                                    <div className="flex-grow">
+                                        <h3 className="font-bold text-slate-100 text-lg leading-tight">{quiz.name}</h3>
+                                        <p className="text-slate-400 text-sm mt-1 font-mono">
+                                            {progress.total} Questions
+                                        </p>
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-4 flex-shrink-0">
+                                <div className="flex items-center gap-4 flex-shrink-0 w-full sm:w-auto justify-end">
                                     {getStatusPill(progress.status)}
                                     <button
                                         onClick={() => onStartQuiz(quiz.id)}
-                                        className={`w-28 text-center px-5 py-2.5 font-semibold rounded-lg text-sm transition-all duration-200 transform shadow-sm flex items-center justify-center gap-2 ${
+                                        className={`w-full sm:w-28 text-center px-5 py-2.5 font-semibold rounded-lg text-sm transition-all duration-200 transform shadow-sm flex items-center justify-center gap-2 ${
                                             isCompleted 
                                             ? 'bg-slate-700 hover:bg-slate-600 text-slate-300' 
                                             : 'bg-blue-500 hover:bg-blue-400 text-white shadow-blue-500/20 hover:scale-105'

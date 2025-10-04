@@ -505,7 +505,7 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen w-full font-sans bg-slate-900">
       <main className="w-full max-w-5xl mx-auto px-4 pb-12 pt-12">
-        <div className="transition-all duration-500 min-h-[450px] bg-slate-800/50 border border-slate-700 rounded-2xl shadow-lg shadow-black/20 backdrop-blur-sm">
+        <div className="transition-all duration-500 md:min-h-[450px] bg-slate-800/50 border border-slate-700 rounded-2xl shadow-lg shadow-black/20 backdrop-blur-sm">
           {renderContent()}
         </div>
       </main>

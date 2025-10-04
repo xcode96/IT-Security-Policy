@@ -255,22 +255,22 @@ const AdminDashboard: React.FC = () => {
             <div className="space-y-4">
                 {filteredReports.map(report => (
                     <div key={report.id} className="bg-slate-800 rounded-xl border border-slate-700 transition-shadow hover:shadow-sm overflow-hidden">
-                        <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between">
-                            <div className="mb-3 sm:mb-0">
-                                <h3 className="font-bold text-slate-200 text-lg">{report.user.fullName} <span className="text-slate-400 font-normal">(Username: {report.user.username})</span></h3>
+                        <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                            <div className="flex-grow">
+                                <h3 className="font-bold text-slate-200 text-lg">{report.user.fullName} <span className="text-slate-400 font-normal text-base">(Username: {report.user.username})</span></h3>
                                 <p className="text-slate-400 text-sm">Submitted on: {new Date(report.submissionDate).toLocaleString()}</p>
                             </div>
-                            <div className="flex items-center gap-2 w-full sm:w-auto flex-shrink-0">
+                            <div className="flex items-center gap-2 w-full sm:w-auto flex-shrink-0 flex-wrap justify-end">
                                 <span className={`px-3 py-1 text-xs font-bold leading-none rounded-full w-20 text-center ${report.overallResult ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
                                     {report.overallResult ? 'Pass' : 'Fail'}
                                 </span>
-                                 <button onClick={() => setViewingCertificateFor(report)} className="px-4 py-2 font-semibold rounded-lg text-sm transition-all duration-200 shadow-sm w-full sm:w-auto border bg-slate-700 hover:bg-slate-600 text-slate-300 border-slate-600">
+                                 <button onClick={() => setViewingCertificateFor(report)} className="px-4 py-2 font-semibold rounded-lg text-sm transition-all duration-200 shadow-sm border bg-slate-700 hover:bg-slate-600 text-slate-300 border-slate-600">
                                     Certificate
                                 </button>
-                                <button onClick={() => handleShareReport(report)} className={`px-4 py-2 font-semibold rounded-lg text-sm transition-all duration-200 shadow-sm w-full sm:w-auto border ${copiedReportId === report.id ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-slate-700 hover:bg-slate-600 text-slate-300 border-slate-600'}`}>
+                                <button onClick={() => handleShareReport(report)} className={`px-4 py-2 font-semibold rounded-lg text-sm transition-all duration-200 shadow-sm border ${copiedReportId === report.id ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-slate-700 hover:bg-slate-600 text-slate-300 border-slate-600'}`}>
                                     {copiedReportId === report.id ? 'Copied!' : 'Share'}
                                 </button>
-                                <button onClick={() => setSelectedReportId(selectedReportId === report.id ? null : report.id)} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-sm transition-transform duration-200 transform hover:scale-105 shadow-sm shadow-blue-500/10 w-full sm:w-auto">
+                                <button onClick={() => setSelectedReportId(selectedReportId === report.id ? null : report.id)} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-sm transition-transform duration-200 transform hover:scale-105 shadow-sm shadow-blue-500/10">
                                     {selectedReportId === report.id ? 'Hide' : 'Details'}
                                 </button>
                             </div>
@@ -310,7 +310,7 @@ const AdminDashboard: React.FC = () => {
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6 border-b border-slate-700 pb-4">
                  <div>
                     <h3 className="text-xl font-bold text-slate-100">Individual Reports ({filteredReports.length})</h3>
-                    <div className="flex items-center gap-2 mt-3">
+                    <div className="flex items-center gap-2 mt-3 flex-wrap">
                         <span className="text-sm font-medium text-slate-400 mr-2">Filter by:</span>
                         <button onClick={() => setFilterStatus('all')} className={`px-4 py-1.5 text-sm font-bold rounded-md transition-colors duration-200 ${filterStatus === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-700 hover:bg-slate-600 text-slate-300'}`}>
                             All
@@ -323,7 +323,7 @@ const AdminDashboard: React.FC = () => {
                         </button>
                     </div>
                 </div>
-                <div className="flex items-center gap-4 w-full md:w-auto">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
                     <input
                         type="text"
                         placeholder="Search by name or username..."
@@ -331,13 +331,15 @@ const AdminDashboard: React.FC = () => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full md:w-64 p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
                     />
-                    <button onClick={handleExportToExcel} disabled={filteredReports.length === 0} className="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white font-semibold rounded-lg text-sm transition-colors duration-200 disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed flex-shrink-0 flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path d="M10.75 2.75a.75.75 0 00-1.5 0v8.614L6.295 8.235a.75.75 0 10-1.09 1.03l4.25 4.5a.75.75 0 001.09 0l4.25-4.5a.75.75 0 00-1.09-1.03l-2.955 3.129V2.75z" /><path d="M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z" /></svg>
-                        Export
-                    </button>
-                    <button onClick={handleClearReports} disabled={reports.length === 0 || isLoading} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-sm transition-colors duration-200 disabled:bg-slate-600 disabled:cursor-not-allowed flex-shrink-0">
-                        Clear All
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button onClick={handleExportToExcel} disabled={filteredReports.length === 0} className="flex-1 w-full px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white font-semibold rounded-lg text-sm transition-colors duration-200 disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed flex-shrink-0 flex items-center justify-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path d="M10.75 2.75a.75.75 0 00-1.5 0v8.614L6.295 8.235a.75.75 0 10-1.09 1.03l4.25 4.5a.75.75 0 001.09 0l4.25-4.5a.75.75 0 00-1.09-1.03l-2.955 3.129V2.75z" /><path d="M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z" /></svg>
+                            Export
+                        </button>
+                        <button onClick={handleClearReports} disabled={reports.length === 0 || isLoading} className="flex-1 w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-sm transition-colors duration-200 disabled:bg-slate-600 disabled:cursor-not-allowed flex-shrink-0">
+                            Clear All
+                        </button>
+                    </div>
                 </div>
             </div>
 

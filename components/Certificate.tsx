@@ -28,7 +28,7 @@ const Certificate: React.FC<CertificateProps> = ({ user, completionDate, onClose
           
           <p className="text-slate-400">for successfully completing the mandatory IT Security Policy training modules.</p>
           
-          <div className="mt-8 flex justify-between items-center max-w-sm mx-auto">
+          <div className="mt-8 flex flex-col sm:flex-row justify-between items-center max-w-sm mx-auto gap-8 sm:gap-4">
             <div className="text-center">
               <p className="font-serif text-lg border-t-2 border-slate-600 pt-2">{completionDate}</p>
               <p className="text-xs text-slate-500 uppercase tracking-wider mt-1">Date of Completion</p>
