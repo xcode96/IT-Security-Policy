@@ -4,7 +4,7 @@
   "description": "A simple API server for the IT Security Training application.",
   "type": "module",
   "scripts": {
-    "start": "node server.js"
+    "start": "node api/index.js"
   },
   "dependencies": {
     "body-parser": "^1.20.2",
