@@ -2,9 +2,9 @@
   "name": "it-security-api-server",
   "version": "1.0.0",
   "description": "A simple API server for the IT Security Training application.",
-  "type": "module",
+  "main": "server.js",
   "scripts": {
-    "start": "node api/index.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "body-parser": "^1.20.2",
@@ -13,6 +13,6 @@
     "express": "^4.19.2"
   },
   "engines": {
-    "node": ">=18.x"
+    "node": ">=18.0.0"
   }
 }
