@@ -117,4 +117,4 @@ To update the quiz questions for all users, you must update the source code. The
 
 5.  **Commit and Push**:
     - Save the `constants.ts` file.
-    - Commit and push this change to your frontend GitHub repository. Vercel will automatically re-deploy your site with the updated questions.
+    - Commit and push this change to your frontend GitHub repository. Vercel will automatically re-deploy your site with the updated questions..
